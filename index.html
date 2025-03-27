@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="Vibe Pong - A retro-style neon pong game with modern visuals">
+    <title>Vibe Pong</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+            background-color: #0a0a0f;
+            color: white;
+            touch-action: none; /* Prevent default touch actions for better game control */
+        }
+        canvas {
+            display: block;
+        }
+        #info {
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-size: 40px;
+            font-weight: bold;
+            text-shadow: 0 0 20px #00aaff, 0 0 30px #0088ff;
+            pointer-events: none;
+            z-index: 20;
+            font-family: 'Orbitron', sans-serif;
+        }
+        #debug {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            font-family: monospace;
+            z-index: 20;
+            white-space: pre;
+            line-height: 1.4;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 5px;
+            max-width: 90%;
+        }
+        #startScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(to bottom, rgba(10, 10, 15, 0.8), rgba(20, 10, 40, 0.9));
+            z-index: 30;
+        }
+        #title {
+            font-size: 72px;
+            margin-bottom: 30px;
+            color: #ffea00;
+            text-shadow: 0 0 20px rgba(255, 234, 0, 0.7), 0 0 40px rgba(255, 200, 0, 0.4);
+            font-family: 'Orbitron', sans-serif;
+            animation: glow 2s infinite alternate;
+        }
+        @keyframes glow {
+            from {
+                text-shadow: 0 0 20px rgba(255, 234, 0, 0.7), 0 0 40px rgba(255, 200, 0, 0.4);
+            }
+            to {
+                text-shadow: 0 0 30px rgba(255, 234, 0, 0.9), 0 0 50px rgba(255, 200, 0, 0.7);
+            }
+        }
+        #startButton {
+            padding: 15px 40px;
+            font-size: 24px;
+            background-color: transparent;
+            color: white;
+            border: 2px solid #00c3ff;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 0 15px rgba(0, 195, 255, 0.5);
+            font-family: 'Orbitron', sans-serif;
+        }
+        #startButton:hover, #startButton:focus {
+            background-color: rgba(0, 195, 255, 0.2);
+            box-shadow: 0 0 20px rgba(0, 195, 255, 0.8), 0 0 40px rgba(0, 150, 255, 0.4);
+            transform: scale(1.05);
+            outline: none;
+        }
+        #controls {
+            margin-top: 30px;
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.7);
+            text-align: center;
+            line-height: 1.6;
+        }
+        .sound-toggle {
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        .sound-toggle input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+        .toggle-slider {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+            background-color: rgba(0, 0, 0, 0.4);
+            border-radius: 30px;
+            border: 2px solid #00c3ff;
+            margin-left: 10px;
+            transition: all 0.3s;
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 24px;
+            width: 24px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+        input:checked + .toggle-slider {
+            background-color: rgba(0, 195, 255, 0.3);
+            box-shadow: 0 0 15px rgba(0, 195, 255, 0.5);
+        }
+        input:checked + .toggle-slider:before {
+            transform: translateX(30px);
+        }
+        .setting-label {
+            margin-right: 8px;
+        }
+        
+        /* Mobile instructions */
+        .mobile-instructions {
+            display: none;
+        }
+        
+        /* Display mobile instructions on touch devices */
+        @media (pointer: coarse) {
+            .mobile-instructions {
+                display: block;
+            }
+            .desktop-instructions {
+                display: none;
+            }
+            #title {
+                font-size: 50px;
+            }
+        }
+        
+        /* Accessibility focus styles */
+        *:focus {
+            outline: 3px solid #00c3ff;
+            outline-offset: 3px;
+        }
+        
+        /* Game controls info box */
+        #gameControls {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            z-index: 25;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        #accessibilityPanel {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 40;
+        }
+        
+        #accessibilityButton {
+            background-color: rgba(0, 0, 0, 0.6);
+            color: white;
+            border: 1px solid #00c3ff;
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+            outline: none;
+        }
+        
+        #accessibilityButton:hover, #accessibilityButton:focus {
+            background-color: rgba(0, 195, 255, 0.2);
+            box-shadow: 0 0 10px rgba(0, 195, 255, 0.5);
+        }
+    </style>
+    <!-- Google Fonts for a retro feel -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="info" aria-live="polite" aria-label="Score"></div>
+    <div id="debug" aria-hidden="true"></div>
+    
+    <div id="accessibilityPanel">
+        <button id="accessibilityButton" aria-label="Accessibility Options">A11y</button>
+    </div>
+    
+    <div id="startScreen" role="dialog" aria-labelledby="title">
+        <div id="title">VIBE PONG</div>
+        <button id="startButton" aria-label="Start game">PLAY</button>
+        <div id="controls">
+            <div class="desktop-instructions">
+                Controls:<br>
+                W/S or UP/DOWN to move paddle<br>
+                SPACE to start<br>
+                P to pause
+            </div>
+            <div class="mobile-instructions">
+                Controls:<br>
+                Swipe up/down to move paddle<br>
+                Tap screen to start
+            </div>
+        </div>
+        <label class="sound-toggle">
+            <span class="setting-label">Sound</span>
+            <input type="checkbox" id="soundToggle" checked aria-label="Enable sound">
+            <span class="toggle-slider" role="presentation"></span>
+        </label>
+    </div>
+    
+    <div id="gameControls" aria-label="Game controls" role="complementary">
+        <p>
+            <strong>Controls:</strong><br>
+            Move: W/S, ↑/↓, swipe<br>
+            Pause: P<br>
+        </p>
+    </div>
+
+    <!-- Import Three.js -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    
+    <!-- Import sound files -->
+    <script src="./assets/sounds/bounce.js"></script>
+    <script src="./assets/sounds/wall.js"></script>
+    <script src="./assets/sounds/score.js"></script>
+    
+    <!-- Then our game code -->
+    <script src="./js/main.js"></script>
+</body>
+</html> 
