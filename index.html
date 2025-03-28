@@ -248,12 +248,14 @@
     </div>
 
     <!-- Import Three.js -->
-    <script src="https://unpkg.com/three@0.161.0/build/three.min.js"></script>
+    <script src="./lib/three.min.js"></script>
     <script>
         // Check if Three.js loaded correctly
         if (typeof THREE === 'undefined') {
             console.error('Three.js failed to load');
             document.body.innerHTML = '<div style="color: white; padding: 20px;">Error loading game engine. Please try refreshing the page.</div>';
+        } else {
+            console.log('Three.js loaded successfully');
         }
     </script>
     
