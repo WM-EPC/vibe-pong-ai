@@ -248,7 +248,14 @@
     </div>
 
     <!-- Import Three.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.161.0/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.161.0/build/three.min.js"></script>
+    <script>
+        // Check if Three.js loaded correctly
+        if (typeof THREE === 'undefined') {
+            console.error('Three.js failed to load');
+            document.body.innerHTML = '<div style="color: white; padding: 20px;">Error loading game engine. Please try refreshing the page.</div>';
+        }
+    </script>
     
     <!-- Import sound files -->
     <script src="./assets/sounds/bounce.js"></script>
