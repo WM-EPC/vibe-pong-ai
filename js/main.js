@@ -27,6 +27,10 @@ const GAME_CONFIG = {
         NEON_YELLOW: new THREE.Color(1, 0.92, 0),
         BACKGROUND: new THREE.Color(0.01, 0.01, 0.03),
         GRID: new THREE.Color(0.2, 0.2, 0.6)
+    },
+    VIEW_MODES: {
+        THIRD_PERSON: 'THIRD_PERSON',
+        FIRST_PERSON: 'FIRST_PERSON'
     }
 };
 
@@ -68,6 +72,9 @@ class PongGame {
             fieldBoundary: null
         };
         this.ballTrail = [];
+        
+        // View mode state
+        this.currentViewMode = GAME_CONFIG.VIEW_MODES.THIRD_PERSON;
         
         // Bind methods to maintain 'this' context
         this.init = this.init.bind(this);
@@ -676,6 +683,7 @@ class PongGame {
         
         // Create in-game sound toggle
         this.createInGameSoundToggle();
+        this.createViewModeToggle();  // Add view mode toggle
         
         // Play a test sound to enable audio context
         this.playInitialSound();
@@ -1047,6 +1055,63 @@ class PongGame {
             this.debug("Audio context initialization error: " + error);
             console.warn("Audio context error:", error);
         }
+    }
+
+    // Create view mode toggle for the main game panel
+    createViewModeToggle() {
+        // Check if it already exists
+        if (document.getElementById('viewModeToggle')) return;
+        
+        // Create container
+        const viewModeContainer = document.createElement('div');
+        viewModeContainer.id = 'viewModeToggleContainer';
+        viewModeContainer.style.position = 'absolute';
+        viewModeContainer.style.top = '10px';
+        viewModeContainer.style.right = '10px';
+        viewModeContainer.style.zIndex = '25';
+        viewModeContainer.style.display = 'flex';
+        viewModeContainer.style.alignItems = 'center';
+        viewModeContainer.style.background = 'rgba(0, 0, 0, 0.5)';
+        viewModeContainer.style.padding = '5px 10px';
+        viewModeContainer.style.borderRadius = '5px';
+        
+        // Create label
+        const viewModeLabel = document.createElement('label');
+        viewModeLabel.style.display = 'flex';
+        viewModeLabel.style.alignItems = 'center';
+        viewModeLabel.style.cursor = 'pointer';
+        viewModeLabel.style.color = 'white';
+        viewModeLabel.style.fontFamily = 'Orbitron, sans-serif';
+        viewModeLabel.style.fontSize = '14px';
+        
+        // Create text
+        const viewModeText = document.createElement('span');
+        viewModeText.textContent = 'FP View';
+        viewModeText.style.marginRight = '8px';
+        
+        // Create checkbox
+        const viewModeCheckbox = document.createElement('input');
+        viewModeCheckbox.type = 'checkbox';
+        viewModeCheckbox.id = 'viewModeToggle';
+        viewModeCheckbox.checked = this.currentViewMode === GAME_CONFIG.VIEW_MODES.FIRST_PERSON;
+        viewModeCheckbox.style.cursor = 'pointer';
+        
+        // Add event listener
+        viewModeCheckbox.addEventListener('change', () => {
+            this.currentViewMode = viewModeCheckbox.checked ? 
+                GAME_CONFIG.VIEW_MODES.FIRST_PERSON : 
+                GAME_CONFIG.VIEW_MODES.THIRD_PERSON;
+            
+            this.debug("View mode changed to: " + this.currentViewMode);
+        });
+        
+        // Assemble the elements
+        viewModeLabel.appendChild(viewModeText);
+        viewModeLabel.appendChild(viewModeCheckbox);
+        viewModeContainer.appendChild(viewModeLabel);
+        
+        // Add to document
+        document.body.appendChild(viewModeContainer);
     }
 }
 
