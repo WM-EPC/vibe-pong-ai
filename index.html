@@ -5,6 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="description" content="Vibe Pong - A retro-style neon pong game with modern visuals">
     <title>Vibe Pong</title>
+    
+    <!-- Import map for Three.js -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.161.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.161.0/examples/jsm/"
+        }
+    }
+    </script>
+    
     <style>
         body {
             margin: 0;
@@ -247,24 +258,12 @@
         </p>
     </div>
 
-    <!-- Import Three.js -->
-    <script src="https://cdn.skypack.dev/three@0.161.0"></script>
-    <script>
-        // Check if Three.js loaded correctly
-        if (typeof THREE === 'undefined') {
-            console.error('Three.js failed to load');
-            document.body.innerHTML = '<div style="color: white; padding: 20px;">Error loading game engine. Please try refreshing the page.</div>';
-        } else {
-            console.log('Three.js loaded successfully');
-        }
-    </script>
-    
     <!-- Import sound files -->
     <script src="./assets/sounds/bounce.js"></script>
     <script src="./assets/sounds/wall.js"></script>
     <script src="./assets/sounds/score.js"></script>
     
-    <!-- Then our game code -->
-    <script src="./js/main.js"></script>
+    <!-- Then our game code as a module -->
+    <script type="module" src="./js/main.js"></script>
 </body>
 </html> 

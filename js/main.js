@@ -1,3 +1,5 @@
+import * as THREE from 'three';
+
 // Game is using regular script imports now, not ES modules
 
 // Constants
