@@ -1,4 +1,7 @@
 import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
 // Game is using regular script imports now, not ES modules
 
@@ -26,6 +29,11 @@ const GAME_CONFIG = {
         NEON_YELLOW: new THREE.Color(1, 0.92, 0),
         BACKGROUND: new THREE.Color(0.01, 0.01, 0.03),
         GRID: new THREE.Color(0.2, 0.2, 0.6)
+    },
+    BLOOM: {
+        STRENGTH: 1.5,
+        RADIUS: 0.75,
+        THRESHOLD: 0.2
     }
 };
 
@@ -67,6 +75,9 @@ class PongGame {
             fieldBoundary: null
         };
         this.ballTrail = [];
+        
+        // Post-processing setup
+        this.composer = null;
         
         // Bind methods to maintain 'this' context
         this.init = this.init.bind(this);
@@ -122,7 +133,10 @@ class PongGame {
             this.renderer = new THREE.WebGLRenderer({ antialias: true });
             this.renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(this.renderer.domElement);
-    
+
+            // Setup post-processing
+            this.setupPostProcessing();
+            
             // Load sounds
             this.setupSounds();
             
@@ -675,6 +689,8 @@ class PongGame {
         this.camera.aspect = window.innerWidth / window.innerHeight;
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(window.innerWidth, window.innerHeight);
+        // Update composer size
+        this.composer.setSize(window.innerWidth, window.innerHeight);
     }
     
     // Update paddle positions
@@ -904,8 +920,8 @@ class PongGame {
                 this.camera.lookAt(0, 0, 0);
             }
             
-            // Render scene
-            this.renderer.render(this.scene, this.camera);
+            // Render scene with post-processing
+            this.composer.render();
         } catch (error) {
             this.debug("ERROR in animate: " + error.message);
             console.error(error);
@@ -1004,6 +1020,27 @@ class PongGame {
             this.debug("Audio context initialization error: " + error);
             console.warn("Audio context error:", error);
         }
+    }
+
+    // Setup post-processing effects
+    setupPostProcessing() {
+        const { STRENGTH, RADIUS, THRESHOLD } = GAME_CONFIG.BLOOM;
+        
+        // Create effect composer
+        this.composer = new EffectComposer(this.renderer);
+        
+        // Add render pass
+        const renderPass = new RenderPass(this.scene, this.camera);
+        this.composer.addPass(renderPass);
+        
+        // Add bloom pass
+        const bloomPass = new UnrealBloomPass(
+            new THREE.Vector2(window.innerWidth, window.innerHeight),
+            STRENGTH,
+            RADIUS,
+            THRESHOLD
+        );
+        this.composer.addPass(bloomPass);
     }
 }
 
