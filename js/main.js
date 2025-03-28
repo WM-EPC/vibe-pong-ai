@@ -5,8 +5,8 @@ import * as THREE from 'three';
 // Constants
 const GAME_CONFIG = {
     FIELD: {
-        WIDTH: 22,
-        HEIGHT: 13,
+        WIDTH: 20,
+        HEIGHT: 12,
         DEPTH: 1
     },
     PADDLE: {
@@ -25,7 +25,7 @@ const GAME_CONFIG = {
         NEON_BLUE: new THREE.Color(0, 0.76, 1),
         NEON_YELLOW: new THREE.Color(1, 0.92, 0),
         BACKGROUND: new THREE.Color(0.01, 0.01, 0.03),
-        GRID: new THREE.Color(0.3, 0.3, 0.6)
+        GRID: new THREE.Color(0.2, 0.2, 0.6)
     }
 };
 
@@ -114,8 +114,8 @@ class PongGame {
             this.scene.background = GAME_CONFIG.COLORS.BACKGROUND;
             
             // Camera setup
-            this.camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
-            this.camera.position.set(0, 5, 16);
+            this.camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 1000);
+            this.camera.position.set(0, 8, 20);
             this.camera.lookAt(0, 0, 0);
     
             // Renderer setup
@@ -318,59 +318,95 @@ class PongGame {
             // Grid helper for the floor
             const gridHelper = new THREE.GridHelper(WIDTH * 1.5, 20, GAME_CONFIG.COLORS.GRID, GAME_CONFIG.COLORS.GRID);
             gridHelper.position.y = -HEIGHT / 2 - 0.01;
+            // Add fog to grid
+            const gridMaterial = gridHelper.material;
+            gridMaterial.transparent = true;
+            gridMaterial.opacity = 0.3;
             this.scene.add(gridHelper);
 
-            // Create floor
+            // Create floor with darker color and more metallic look
             const floor = this.createMesh(
                 new THREE.PlaneGeometry(WIDTH, WIDTH),
                 {
-                    color: 0x000020,
-                    metalness: 0.8,
-                    roughness: 0.3,
-                    emissive: 0x000020,
-                    emissiveIntensity: 0.2
+                    color: 0x000010,
+                    metalness: 0.9,
+                    roughness: 0.2,
+                    emissive: 0x000010,
+                    emissiveIntensity: 0.1
                 },
                 new THREE.Vector3(0, -HEIGHT / 2, 0),
                 new THREE.Euler(-Math.PI / 2, 0, 0)
             );
             this.scene.add(floor);
 
-            // Center line
+            // Center line with enhanced glow
             const centerLine = this.createMesh(
                 new THREE.BoxGeometry(0.1, HEIGHT, 0.1),
                 { 
-                    color: 0x4444ff,
+                    color: GAME_CONFIG.COLORS.NEON_BLUE,
                     transparent: true,
-                    opacity: 0.8
+                    opacity: 0.9,
+                    emissive: GAME_CONFIG.COLORS.NEON_BLUE,
+                    emissiveIntensity: 1.5
                 },
                 new THREE.Vector3(0, 0, 0)
             );
+            // Add glow effect to center line
+            const centerGlow = new THREE.Mesh(
+                new THREE.BoxGeometry(0.2, HEIGHT, 0.2),
+                new THREE.MeshBasicMaterial({
+                    color: GAME_CONFIG.COLORS.NEON_BLUE,
+                    transparent: true,
+                    opacity: 0.4
+                })
+            );
+            centerLine.add(centerGlow);
             this.scene.add(centerLine);
 
-            // Create border material (reuse for all borders)
-            const borderMaterial = new THREE.MeshBasicMaterial({ 
-                color: 0x00aaff,
+            // Create enhanced border material
+            const borderMaterial = new THREE.MeshStandardMaterial({ 
+                color: GAME_CONFIG.COLORS.NEON_BLUE,
                 transparent: true,
-                opacity: 0.8
+                opacity: 0.9,
+                emissive: GAME_CONFIG.COLORS.NEON_BLUE,
+                emissiveIntensity: 1.5
             });
             
-            // Bottom border
+            // Bottom border with glow
             const bottomBorder = new THREE.Mesh(
                 new THREE.BoxGeometry(WIDTH, 0.1, 0.1),
                 borderMaterial
             );
             bottomBorder.position.y = -HEIGHT / 2;
+            const bottomGlow = new THREE.Mesh(
+                new THREE.BoxGeometry(WIDTH, 0.2, 0.2),
+                new THREE.MeshBasicMaterial({
+                    color: GAME_CONFIG.COLORS.NEON_BLUE,
+                    transparent: true,
+                    opacity: 0.4
+                })
+            );
+            bottomBorder.add(bottomGlow);
             this.scene.add(bottomBorder);
             
-            // Top border
+            // Top border with glow
             const topBorder = new THREE.Mesh(
                 new THREE.BoxGeometry(WIDTH, 0.1, 0.1),
                 borderMaterial
             );
             topBorder.position.y = HEIGHT / 2;
+            const topGlow = new THREE.Mesh(
+                new THREE.BoxGeometry(WIDTH, 0.2, 0.2),
+                new THREE.MeshBasicMaterial({
+                    color: GAME_CONFIG.COLORS.NEON_BLUE,
+                    transparent: true,
+                    opacity: 0.4
+                })
+            );
+            topBorder.add(topGlow);
             this.scene.add(topBorder);
             
-            // Field outline
+            // Enhanced field outline with stronger glow
             const points = [
                 new THREE.Vector3(-WIDTH / 2, -HEIGHT / 2, 0),
                 new THREE.Vector3(-WIDTH / 2, HEIGHT / 2, 0),
@@ -383,9 +419,9 @@ class PongGame {
             this.objects.fieldBoundary = new THREE.Line(
                 geometry, 
                 new THREE.LineBasicMaterial({ 
-                    color: 0x00aaff, 
+                    color: GAME_CONFIG.COLORS.NEON_BLUE, 
                     linewidth: 3,
-                    opacity: 0.8,
+                    opacity: 0.9,
                     transparent: true
                 })
             );
@@ -857,13 +893,13 @@ class PongGame {
             
             // Add a subtle pulse to the field boundary for visibility
             if (this.objects.fieldBoundary && this.gameStarted) {
-                const pulse = Math.sin(Date.now() * 0.002) * 0.5 + 0.5;
-                this.objects.fieldBoundary.material.opacity = 0.4 + pulse * 0.6;
+                const pulse = Math.sin(Date.now() * 0.002) * 0.3 + 0.7; // Reduced pulse range for subtler effect
+                this.objects.fieldBoundary.material.opacity = 0.7 + pulse * 0.3;
             }
             
             // Gentle camera sway only if game has started
             if (this.gameStarted && !this.gamePaused) {
-                const swayAmount = 0.7; // Reduced from 2.0
+                const swayAmount = 0.4; // Reduced sway
                 this.camera.position.x = Math.sin(Date.now() * 0.0002) * swayAmount;
                 this.camera.lookAt(0, 0, 0);
             }
