@@ -5,8 +5,8 @@ import * as THREE from 'three';
 // Constants
 const GAME_CONFIG = {
     FIELD: {
-        WIDTH: 24,
-        HEIGHT: 16,
+        WIDTH: 22,
+        HEIGHT: 13,
         DEPTH: 1
     },
     PADDLE: {
@@ -114,8 +114,8 @@ class PongGame {
             this.scene.background = GAME_CONFIG.COLORS.BACKGROUND;
             
             // Camera setup
-            this.camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
-            this.camera.position.set(0, 3, 16);
+            this.camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+            this.camera.position.set(0, 5, 16);
             this.camera.lookAt(0, 0, 0);
     
             // Renderer setup
