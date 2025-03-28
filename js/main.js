@@ -760,20 +760,21 @@ class PongGame {
         // Create trail segments
         for (let i = 0; i < this.ballTrail.length - 1; i++) {
             const start = this.ballTrail[i];
-            const end = this.ballTrail[i + 1];
             
-            // Calculate opacity based on position in trail
-            const opacity = (i / this.ballTrail.length) * 0.5;
+            // Calculate opacity and scale based on position in trail
+            const progress = i / this.ballTrail.length;
+            const opacity = progress * 0.5;
             
-            // Create trail segment
+            // Create trail segment with more aggressive tapering
             const trailMaterial = new THREE.MeshBasicMaterial({
                 color: GAME_CONFIG.COLORS.NEON_YELLOW,
                 transparent: true,
                 opacity: opacity
             });
             
-            // Create a sphere at each trail position with decreasing size
-            const scaleFactor = 0.8 + (i / this.ballTrail.length) * 0.2;
+            // Create a sphere at each trail position with more aggressive size reduction
+            // Use a quadratic scale reduction for more pronounced tapering
+            const scaleFactor = Math.pow(progress, 0.5) * 0.8;
             const trailGeometry = new THREE.SphereGeometry(RADIUS * scaleFactor, 8, 8);
             const trailMesh = new THREE.Mesh(trailGeometry, trailMaterial);
             trailMesh.position.copy(start);
