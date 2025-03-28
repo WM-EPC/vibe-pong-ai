@@ -324,66 +324,15 @@ class PongGame {
         try {
             const {WIDTH, HEIGHT} = GAME_CONFIG.FIELD;
             
-            // Enhanced Grid helper for the floor with more visibility
+            // Enhanced Grid helper for the floor with more visibility - KEEP FOR OUTER AREA
             const gridHelper = new THREE.GridHelper(WIDTH * 2, 30, GAME_CONFIG.COLORS.GRID, GAME_CONFIG.COLORS.GRID);
             gridHelper.position.y = -HEIGHT / 2 - 0.01;
             // Add fog to grid with increased opacity
             const gridMaterial = gridHelper.material;
             gridMaterial.transparent = true;
-            gridMaterial.opacity = 0.6; // Increased from 0.3
+            gridMaterial.opacity = 0.6; 
             this.scene.add(gridHelper);
             
-            // Create animated grid lines for dynamic water-like effect
-            this.waveGridGroup = new THREE.Group();
-            const waveLines = 40; // More lines for denser effect
-            const lineSpacing = WIDTH * 2 / waveLines;
-            
-            // Create wave-like lines across the floor
-            for (let i = 0; i < waveLines; i++) {
-                // X direction lines
-                const xLineMaterial = new THREE.LineBasicMaterial({
-                    color: GAME_CONFIG.COLORS.GRID,
-                    transparent: true,
-                    opacity: 0.5
-                });
-                
-                const xLineGeometry = new THREE.BufferGeometry();
-                const xLinePositions = new Float32Array(waveLines * 3);
-                
-                for (let j = 0; j < waveLines; j++) {
-                    xLinePositions[j * 3] = -WIDTH + j * lineSpacing;      // x
-                    xLinePositions[j * 3 + 1] = 0;                         // y
-                    xLinePositions[j * 3 + 2] = -WIDTH + i * lineSpacing;  // z
-                }
-                
-                xLineGeometry.setAttribute('position', new THREE.BufferAttribute(xLinePositions, 3));
-                const xLine = new THREE.Line(xLineGeometry, xLineMaterial);
-                this.waveGridGroup.add(xLine);
-                
-                // Z direction lines
-                const zLineMaterial = new THREE.LineBasicMaterial({
-                    color: GAME_CONFIG.COLORS.GRID,
-                    transparent: true,
-                    opacity: 0.5
-                });
-                
-                const zLineGeometry = new THREE.BufferGeometry();
-                const zLinePositions = new Float32Array(waveLines * 3);
-                
-                for (let j = 0; j < waveLines; j++) {
-                    zLinePositions[j * 3] = -WIDTH + i * lineSpacing;      // x
-                    zLinePositions[j * 3 + 1] = 0;                         // y
-                    zLinePositions[j * 3 + 2] = -WIDTH + j * lineSpacing;  // z
-                }
-                
-                zLineGeometry.setAttribute('position', new THREE.BufferAttribute(zLinePositions, 3));
-                const zLine = new THREE.Line(zLineGeometry, zLineMaterial);
-                this.waveGridGroup.add(zLine);
-            }
-            
-            this.waveGridGroup.position.y = -HEIGHT / 2 + 0.02; // Just above the floor
-            this.scene.add(this.waveGridGroup);
-
             // Create floor with darker color and more metallic look
             const floor = this.createMesh(
                 new THREE.PlaneGeometry(WIDTH, WIDTH),
@@ -398,6 +347,36 @@ class PongGame {
                 new THREE.Euler(-Math.PI / 2, 0, 0)
             );
             this.scene.add(floor);
+            
+            // Create animated grid lines ONLY for the central playing field
+            this.waveGridGroup = new THREE.Group();
+            const waveLines = 20; // Better density for the central area
+            const lineSpacing = WIDTH / waveLines;
+            
+            // Create wave-like lines across ONLY the central playing field
+            for (let i = 0; i <= waveLines; i++) {
+                // Create horizontal wave lines (moving left to right)
+                const lineMaterial = new THREE.LineBasicMaterial({
+                    color: new THREE.Color(0, 0.6, 0.8), // Brighter blue for better visibility
+                    transparent: true,
+                    opacity: 0.6
+                });
+                
+                const lineGeometry = new THREE.BufferGeometry();
+                // Create lines that span the width of the playing field
+                const linePositions = new Float32Array([
+                    -WIDTH/2, 0, -WIDTH/2 + i * lineSpacing,  // Start point
+                    WIDTH/2, 0, -WIDTH/2 + i * lineSpacing    // End point
+                ]);
+                
+                lineGeometry.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
+                const waveLine = new THREE.Line(lineGeometry, lineMaterial);
+                this.waveGridGroup.add(waveLine);
+            }
+            
+            // Position wave grid just above the floor in the central area
+            this.waveGridGroup.position.y = -HEIGHT / 2 + 0.02;
+            this.scene.add(this.waveGridGroup);
 
             // Center line with enhanced glow
             const centerLine = this.createMesh(
@@ -994,30 +973,26 @@ class PongGame {
             this.movePaddles();
             this.moveBall();
             
-            // Animate the wave grid for water-like effect
+            // Animate the wave grid for water-like effect - HORIZONTAL MOVEMENT FOCUS
             if (this.waveGridGroup) {
                 const time = Date.now() * 0.001;
                 this.waveGridGroup.children.forEach((line, index) => {
                     if (line.geometry.attributes.position) {
                         const positions = line.geometry.attributes.position.array;
-                        const count = positions.length / 3;
                         
-                        for (let i = 0; i < count; i++) {
-                            // Apply wave effect to Y position
-                            const x = positions[i * 3];
-                            const z = positions[i * 3 + 2];
-                            
-                            // Create a wave pattern based on position and time
-                            positions[i * 3 + 1] = 
-                                Math.sin(x * 0.1 + time) * 0.1 + 
-                                Math.sin(z * 0.1 + time * 0.7) * 0.1;
-                        }
+                        // Apply primarily horizontal wave effect
+                        const offset = Math.sin(time * 0.8 + index * 0.2) * 0.3 + // Stronger horizontal movement
+                                      Math.cos(time * 0.5 + index * 0.1) * 0.2;   // Additional variation
+                        
+                        // Move line horizontally
+                        positions[0] = -GAME_CONFIG.FIELD.WIDTH/2 + offset;  // Start point x
+                        positions[3] = GAME_CONFIG.FIELD.WIDTH/2 + offset;   // End point x
                         
                         line.geometry.attributes.position.needsUpdate = true;
+                        
+                        // Pulse the opacity for additional effect
+                        line.material.opacity = 0.4 + Math.sin(time + index * 0.1) * 0.2;
                     }
-                    
-                    // Pulse the opacity for additional effect
-                    line.material.opacity = 0.3 + Math.sin(time + index * 0.1) * 0.15;
                 });
             }
             
