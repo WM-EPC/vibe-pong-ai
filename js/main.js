@@ -18,7 +18,8 @@ const GAME_CONFIG = {
     BALL: {
         RADIUS: 0.5,
         INITIAL_SPEED: 0.12,
-        MAX_TRAIL_LENGTH: 10
+        MAX_TRAIL_LENGTH: 15,  // Increased from 10 for longer trail
+        TRAIL_OPACITY_STEP: 0.07  // How much to reduce opacity per trail segment
     },
     COLORS: {
         NEON_PINK: new THREE.Color(1, 0.08, 0.58),
@@ -522,12 +523,16 @@ class PongGame {
                 })
             );
             
+            // Create trail group
+            this.trailGroup = new THREE.Group();
+            this.scene.add(this.trailGroup);
+            
             // Store reference and add as child so it moves with the ball
             this.objects.ball.userData.glow = ballGlow;
             this.objects.ball.add(ballGlow);
             
             this.scene.add(this.objects.ball);
-            this.debug("Ball created with glow effect");
+            this.debug("Ball created with glow effect and trail");
         } catch (error) {
             this.debug("ERROR in createBall: " + error.message);
             console.error(error);
@@ -539,6 +544,15 @@ class PongGame {
         this.debug("Resetting ball");
         
         const {INITIAL_SPEED} = GAME_CONFIG.BALL;
+        
+        // Clear trail
+        this.ballTrail = [];
+        while(this.trailGroup && this.trailGroup.children.length > 0) {
+            const mesh = this.trailGroup.children[0];
+            mesh.geometry.dispose();
+            mesh.material.dispose();
+            this.trailGroup.remove(mesh);
+        }
         
         // Ensure ball is at center position
         if (this.objects.ball) {
@@ -555,9 +569,6 @@ class PongGame {
             if (Math.abs(this.ballVelocity.x) < 0.05) {
                 this.ballVelocity.x = direction * 0.05;
             }
-            
-            // Clear ball trail
-            this.ballTrail = [];
         } else {
             this.debug("ERROR: Ball reference is missing when trying to reset");
             // Create a new ball if it doesn't exist
@@ -728,16 +739,47 @@ class PongGame {
     moveBall() {
         if (!this.gameStarted || !this.objects.ball || this.gamePaused) return;
         
-        const {MAX_TRAIL_LENGTH} = GAME_CONFIG.BALL;
+        const {MAX_TRAIL_LENGTH, RADIUS, TRAIL_OPACITY_STEP} = GAME_CONFIG.BALL;
+        
+        // Clear old trail meshes
+        while(this.trailGroup.children.length > 0) {
+            const mesh = this.trailGroup.children[0];
+            mesh.geometry.dispose();
+            mesh.material.dispose();
+            this.trailGroup.remove(mesh);
+        }
         
         // Add current position to trail
         if (this.ballTrail.length >= MAX_TRAIL_LENGTH) {
-            // Remove oldest position
             this.ballTrail.shift();
         }
         
         // Add current position
         this.ballTrail.push(this.objects.ball.position.clone());
+        
+        // Create trail segments
+        for (let i = 0; i < this.ballTrail.length - 1; i++) {
+            const start = this.ballTrail[i];
+            const end = this.ballTrail[i + 1];
+            
+            // Calculate opacity based on position in trail
+            const opacity = (i / this.ballTrail.length) * 0.5;
+            
+            // Create trail segment
+            const trailMaterial = new THREE.MeshBasicMaterial({
+                color: GAME_CONFIG.COLORS.NEON_YELLOW,
+                transparent: true,
+                opacity: opacity
+            });
+            
+            // Create a sphere at each trail position with decreasing size
+            const scaleFactor = 0.8 + (i / this.ballTrail.length) * 0.2;
+            const trailGeometry = new THREE.SphereGeometry(RADIUS * scaleFactor, 8, 8);
+            const trailMesh = new THREE.Mesh(trailGeometry, trailMaterial);
+            trailMesh.position.copy(start);
+            
+            this.trailGroup.add(trailMesh);
+        }
         
         // Update ball position
         this.objects.ball.position.add(this.ballVelocity);
