@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 
 // Game is using regular script imports now, not ES modules
+// This is the working version with the first-person button (Phase 1.1)
 
 // Constants
 const GAME_CONFIG = {
