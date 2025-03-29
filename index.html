@@ -55,6 +55,10 @@
             padding: 10px;
             border-radius: 5px;
             max-width: 90%;
+            display: none; /* Hide by default */
+        }
+        #debug.visible {
+            display: block;
         }
         #startScreen {
             position: absolute;
@@ -226,6 +230,9 @@
     <div id="accessibilityPanel">
         <button id="accessibilityButton" aria-label="Accessibility Options">A11y</button>
     </div>
+    
+    <!-- Add required Vibe Jam 2025 attribution link -->
+    <a target="_blank" href="https://jam.pieter.com" style="font-family: 'system-ui', sans-serif; position: fixed; bottom: -1px; right: -1px; padding: 7px; font-size: 14px; font-weight: bold; background: #fff; color: #000; text-decoration: none; z-index: 10; border-top-left-radius: 12px; z-index: 10000; border: 1px solid #fff;">🕹️ Vibe Jam 2025</a>
     
     <div id="startScreen" role="dialog" aria-labelledby="title">
         <div id="title">VIBE PONG</div>

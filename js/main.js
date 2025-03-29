@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
-// Game is using regular script imports now, not ES modules
-// This is the working version with the first-person button (Phase 1.1)
+// Using ES modules import through the importmap in the HTML
+// This allows us to use the latest Three.js version without bundling
 
 // Constants
 const GAME_CONFIG = {
@@ -61,6 +61,9 @@ class PongGame {
         };
         this.ballVelocity = new THREE.Vector3(0, 0, 0);
         this.keysPressed = {};
+        
+        // Mobile touch controls
+        this.touchMoveStrength = undefined;
         
         // Three.js setup
         this.scene = null;
@@ -257,15 +260,24 @@ class PongGame {
             // Get the current touch position
             const currentTouchY = event.touches[0].clientY;
             
-            // Determine direction (up or down)
-            if (currentTouchY < touchY) {
-                // Moving up
+            // Calculate touch movement sensitivity based on screen height
+            const touchSensitivity = window.innerHeight * 0.01;
+            
+            // Determine direction (up or down) with improved sensitivity
+            if (currentTouchY < touchY - touchSensitivity) {
+                // Moving up - stronger movement for larger swipes
+                const delta = Math.min(1, (touchY - currentTouchY) / (window.innerHeight * 0.1));
                 this.keysPressed['touchUp'] = true;
                 this.keysPressed['touchDown'] = false;
-            } else if (currentTouchY > touchY) {
-                // Moving down
+                // Store movement strength for variable speed
+                this.touchMoveStrength = delta;
+            } else if (currentTouchY > touchY + touchSensitivity) {
+                // Moving down - stronger movement for larger swipes
+                const delta = Math.min(1, (currentTouchY - touchY) / (window.innerHeight * 0.1));
                 this.keysPressed['touchUp'] = false;
                 this.keysPressed['touchDown'] = true;
+                // Store movement strength for variable speed
+                this.touchMoveStrength = delta;
             }
             
             // Update touch position
@@ -625,16 +637,26 @@ class PongGame {
     handleKeyDown(event) {
         this.keysPressed[event.key] = true;
         
-        // Space bar starts the game
-        if (event.key === ' ' && !this.gameStarted) {
-            this.debug("Space bar pressed - starting game");
-            this.startGame();
-        }
-        
-        // Handle accessibility shortcuts
-        // 'P' key for pause/play
-        if (event.key === 'p' || event.key === 'P') {
-            this.togglePause();
+        // Game control keys
+        switch (event.key) {
+            case ' ':  // Spacebar
+                if (!this.gameStarted) {
+                    this.startGame();
+                }
+                break;
+            case 'p':
+            case 'P':
+                this.togglePause();
+                break;
+            case 'v':
+            case 'V':
+                this.toggleViewMode();
+                break;
+            case '`':  // Backtick key to toggle debug panel
+                if (this.elements.debug) {
+                    this.elements.debug.classList.toggle('visible');
+                }
+                break;
         }
     }
     
@@ -741,17 +763,30 @@ class PongGame {
         const {HEIGHT: FIELD_HEIGHT} = GAME_CONFIG.FIELD;
         const {HEIGHT: PADDLE_HEIGHT, SPEED: PADDLE_SPEED} = GAME_CONFIG.PADDLE;
         
+        // Default paddle speed
+        let playerSpeed = PADDLE_SPEED;
+        
+        // Apply touch movement strength if available (for mobile)
+        if (this.touchMoveStrength !== undefined && (this.keysPressed['touchUp'] || this.keysPressed['touchDown'])) {
+            playerSpeed = PADDLE_SPEED * (0.5 + this.touchMoveStrength);
+        }
+        
         // Player paddle movement
         if ((this.keysPressed['w'] || this.keysPressed['W'] || 
              this.keysPressed['ArrowUp'] || this.keysPressed['touchUp']) && 
             this.objects.playerPaddle.position.y < FIELD_HEIGHT/2 - PADDLE_HEIGHT/2) {
-            this.objects.playerPaddle.position.y += PADDLE_SPEED;
+            this.objects.playerPaddle.position.y += playerSpeed;
         }
         
         if ((this.keysPressed['s'] || this.keysPressed['S'] || 
              this.keysPressed['ArrowDown'] || this.keysPressed['touchDown']) && 
             this.objects.playerPaddle.position.y > -FIELD_HEIGHT/2 + PADDLE_HEIGHT/2) {
-            this.objects.playerPaddle.position.y -= PADDLE_SPEED;
+            this.objects.playerPaddle.position.y -= playerSpeed;
+        }
+        
+        // Reset touch movement strength for next frame
+        if (this.touchMoveStrength !== undefined) {
+            this.touchMoveStrength = undefined;
         }
         
         // AI paddle movement (simple AI with slight delay/imperfection)
