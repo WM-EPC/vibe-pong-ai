@@ -114,12 +114,8 @@ class PongGame {
                     this.soundEnabled = soundToggle.checked;
                     this.debug("Sound " + (this.soundEnabled ? "enabled" : "disabled"));
                     
-                    // On iOS, enabling sound should also try to resume the audio context
-                    if (this.soundEnabled && this.audioContext && this.audioContext.state === 'suspended') {
-                        if (this.unlockAudioForIOS) {
-                            this.unlockAudioForIOS();
-                        }
-                        // Play a silent test sound to activate audio
+                    // On iOS, enabling sound should trigger audio playback
+                    if (this.soundEnabled) {
                         this.playInitialSound();
                     }
                 });
@@ -183,117 +179,130 @@ class PongGame {
     // Setup audio with a simple audio pool for better performance
     setupSounds() {
         try {
-            // Check if the window functions exist from our sound scripts
-            if (window.createBounceSound && window.createWallSound && window.createScoreSound) {
-                this.debug("Web Audio API sound functions detected");
-            } else {
-                this.debug("WARNING: Sound functions not found. Sound may not work.");
-                return; // Exit early if sound functions aren't available
-            }
+            // Create an audio system that works better across devices including iOS
+            this.soundEnabled = true;
+            this.audioReady = false;
             
-            // Initialize audio context to bypass autoplay restrictions
-            try {
-                // Create audio context
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                this.audioContext = new AudioContext();
-                this.debug("Audio context created with state: " + this.audioContext.state);
+            // Check if running on iOS
+            this.isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            this.debug("Device detection - iOS: " + this.isIOS);
+            
+            // Create audio elements for each sound
+            this.sounds = {
+                bounce: new Audio(),
+                wall: new Audio(),
+                score: new Audio()
+            };
+            
+            // Set up audio element sources using base64 encoded data (short sounds)
+            // We'll use very short sound files directly embedded to avoid loading issues
+            const bounceSound = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA="; // Very short beep
+            const wallSound = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA="; // Very short beep
+            const scoreSound = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA="; // Very short beep
+            
+            // Assign sources
+            this.sounds.bounce.src = bounceSound;
+            this.sounds.wall.src = wallSound;
+            this.sounds.score.src = scoreSound;
+            
+            // Configure audio elements
+            Object.values(this.sounds).forEach(sound => {
+                sound.preload = 'auto';
+                sound.volume = 0.5;
                 
-                // Create dedicated method for iOS audio handling
-                this.unlockAudioForIOS = () => {
-                    // iOS requires user interaction to start audio
-                    if (this.audioContext.state === 'suspended') {
-                        const unlockIOSAudio = () => {
-                            this.audioContext.resume().then(() => {
-                                this.debug("iOS: Audio context resumed by user interaction");
-                                
-                                // Create and play a silent oscillator
-                                const silentOscillator = this.audioContext.createOscillator();
-                                const silentGain = this.audioContext.createGain();
-                                silentGain.gain.value = 0.001; // Nearly silent
-                                silentOscillator.connect(silentGain);
-                                silentGain.connect(this.audioContext.destination);
-                                silentOscillator.start(0);
-                                silentOscillator.stop(this.audioContext.currentTime + 0.5);
-                                
-                                this.debug("iOS: Silent oscillator played to unlock audio");
-                                
-                                // Remove event listeners once audio is unlocked
-                                ['touchstart', 'touchend', 'click', 'keydown'].forEach(event => {
-                                    document.body.removeEventListener(event, unlockIOSAudio);
-                                });
-                            }).catch(err => {
-                                this.debug("iOS: Failed to resume audio context: " + err);
-                            });
-                        };
-                        
-                        // Add event listeners for common user interactions
-                        ['touchstart', 'touchend', 'click', 'keydown'].forEach(event => {
-                            document.body.addEventListener(event, unlockIOSAudio, { once: false });
+                // Add listeners to track loading
+                sound.addEventListener('canplaythrough', () => {
+                    this.debug("Sound loaded and ready to play");
+                    this.audioReady = true;
+                });
+                
+                sound.addEventListener('error', (e) => {
+                    this.debug("Error loading sound: " + e);
+                });
+                
+                // iOS requires user interaction to play audio
+                if (this.isIOS) {
+                    // Set up listeners to unlock audio on iOS
+                    const unlockAudio = () => {
+                        // Play and immediately pause all sounds
+                        Object.values(this.sounds).forEach(s => {
+                            s.play().catch(e => this.debug("Audio play failed: " + e));
+                            s.pause();
+                            s.currentTime = 0;
                         });
                         
-                        this.debug("iOS: Added event listeners to unlock audio");
-                    }
-                };
-                
-                // Call the iOS audio unlocking function
-                this.unlockAudioForIOS();
-                
-            } catch (e) {
-                this.debug("Audio context initialization failed: " + e.message);
-            }
+                        this.debug("iOS: Audio unlocked by user interaction");
+                        this.audioReady = true;
+                        
+                        // Remove event listeners after one use
+                        ['touchstart', 'touchend', 'click', 'keydown'].forEach(event => {
+                            document.removeEventListener(event, unlockAudio, false);
+                        });
+                    };
+                    
+                    // Add event listeners for common user interactions
+                    ['touchstart', 'touchend', 'click', 'keydown'].forEach(event => {
+                        document.addEventListener(event, unlockAudio, false);
+                    });
+                }
+            });
             
+            this.debug("Audio system initialized with HTML5 Audio");
         } catch (error) {
             this.debug("WARNING: Could not initialize sounds: " + error.message);
         }
     }
     
-    // Play sound with Web Audio API
+    // Play sound with HTML Audio elements
     playSound(soundType) {
-        if (!this.soundEnabled) return;
+        if (!this.soundEnabled || !this.audioReady) return;
         
-        // Always try to resume the audio context before playing sound
-        if (this.audioContext && this.audioContext.state === 'suspended') {
-            this.audioContext.resume().then(() => {
-                this.debug("Audio context resumed successfully");
-                this._playActualSound(soundType);
-            }).catch(err => {
-                this.debug("Failed to resume audio context: " + err);
-            });
-        } else {
-            this._playActualSound(soundType);
-        }
-    }
-
-    // Helper to actually play the sound once audio context is ready
-    _playActualSound(soundType) {
         try {
-            // Use the appropriate sound creation function
-            switch(soundType) {
-                case 'bounce':
-                    if (window.createBounceSound) {
-                        window.createBounceSound();
-                        this.debug("Bounce sound played");
-                    }
-                    break;
-                case 'wall':
-                    if (window.createWallSound) {
-                        window.createWallSound();
-                        this.debug("Wall sound played");
-                    }
-                    break;
-                case 'score':
-                    if (window.createScoreSound) {
-                        window.createScoreSound();
-                        this.debug("Score sound played");
-                    }
-                    break;
-                default:
-                    return;
+            const sound = this.sounds[soundType];
+            if (!sound) return;
+            
+            // Reset and play the sound
+            sound.currentTime = 0;
+            
+            // On iOS, we need to be more cautious
+            if (this.isIOS) {
+                // Create a promise to play the sound
+                const playPromise = sound.play();
+                
+                // Handle promise rejection (happens on iOS if audio not unlocked)
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        this.debug("Sound playback failed: " + error);
+                    });
+                }
+            } else {
+                // Just play the sound on other platforms
+                sound.play().catch(e => this.debug("Sound play error: " + e));
             }
+            
+            this.debug(soundType + " sound played");
         } catch (error) {
             // Log sound errors
             console.error("Sound error:", error);
             this.debug("Sound error: " + error);
+        }
+    }
+
+    // Play a test sound to enable audio
+    playInitialSound() {
+        this.debug("Attempting to play initial sound");
+        
+        if (this.isIOS) {
+            // For iOS, we try playing all sounds with user interaction
+            Object.values(this.sounds).forEach(sound => {
+                sound.play().catch(e => {});
+                sound.pause();
+                sound.currentTime = 0;
+            });
+            this.audioReady = true;
+        } else {
+            // For other platforms, just try the bounce sound
+            this.playSound('bounce');
         }
     }
 
@@ -304,14 +313,20 @@ class PongGame {
         
         this.debug("Setting up touch controls for mobile");
         
-        // Track touch position
+        // Track touch position and movement
         let touchY = 0;
+        let lastTouchY = 0;
+        let touchMoving = false;
+        let touchMoveTimeout = null;
+        
         const gameArea = document.body;
         
         // Touch event handlers
         gameArea.addEventListener('touchstart', (event) => {
             event.preventDefault();
             touchY = event.touches[0].clientY;
+            lastTouchY = touchY;
+            touchMoving = false;
             
             // Start game on touch if not started
             if (!this.gameStarted) {
@@ -325,30 +340,46 @@ class PongGame {
             // Get the current touch position
             const currentTouchY = event.touches[0].clientY;
             
-            // Calculate touch movement sensitivity based on screen height
-            const touchSensitivity = window.innerHeight * 0.01;
-            
-            // Determine direction (up or down) with improved sensitivity
-            if (currentTouchY < touchY - touchSensitivity) {
-                // Moving up - stronger movement for larger swipes
-                // Increase delta for faster response (reduced divisor)
-                const delta = Math.min(1.5, (touchY - currentTouchY) / (window.innerHeight * 0.05));
-                this.keysPressed['touchUp'] = true;
-                this.keysPressed['touchDown'] = false;
-                // Store movement strength for variable speed
-                this.touchMoveStrength = delta;
-            } else if (currentTouchY > touchY + touchSensitivity) {
-                // Moving down - stronger movement for larger swipes
-                // Increase delta for faster response (reduced divisor)
-                const delta = Math.min(1.5, (currentTouchY - touchY) / (window.innerHeight * 0.05));
-                this.keysPressed['touchUp'] = false;
-                this.keysPressed['touchDown'] = true;
-                // Store movement strength for variable speed
-                this.touchMoveStrength = delta;
+            // Reset any existing timeout
+            if (touchMoveTimeout) {
+                clearTimeout(touchMoveTimeout);
             }
             
-            // Update touch position
-            touchY = currentTouchY;
+            // Calculate movement delta from the last frame
+            const deltaY = currentTouchY - lastTouchY;
+            touchMoving = true;
+            
+            // Determine direction based on delta
+            if (deltaY < 0) {
+                // Moving up - simplified response
+                this.keysPressed['touchUp'] = true;
+                this.keysPressed['touchDown'] = false;
+                
+                // Set strength proportional to speed of movement
+                const speed = Math.min(1.5, Math.abs(deltaY) / 5);
+                this.touchMoveStrength = speed;
+            } else if (deltaY > 0) {
+                // Moving down - simplified response
+                this.keysPressed['touchUp'] = false;
+                this.keysPressed['touchDown'] = true;
+                
+                // Set strength proportional to speed of movement
+                const speed = Math.min(1.5, Math.abs(deltaY) / 5);
+                this.touchMoveStrength = speed;
+            }
+            
+            // Set a small timeout to detect when movement stops
+            touchMoveTimeout = setTimeout(() => {
+                if (touchMoving) {
+                    // If no new touchmove events have fired, finger has stopped
+                    this.keysPressed['touchUp'] = false;
+                    this.keysPressed['touchDown'] = false;
+                    touchMoving = false;
+                }
+            }, 16); // About one frame
+            
+            // Update last touch position
+            lastTouchY = currentTouchY;
         });
         
         gameArea.addEventListener('touchend', (event) => {
@@ -356,6 +387,12 @@ class PongGame {
             // Reset touch controls
             this.keysPressed['touchUp'] = false;
             this.keysPressed['touchDown'] = false;
+            touchMoving = false;
+            
+            if (touchMoveTimeout) {
+                clearTimeout(touchMoveTimeout);
+                touchMoveTimeout = null;
+            }
         });
     }
     
@@ -812,16 +849,11 @@ class PongGame {
         this.createInGameSoundToggle();
         this.createViewModeToggle();  // Add view mode toggle
 
-        // Resume audio context for iOS
-        if (this.audioContext && this.audioContext.state === 'suspended') {
-            if (this.unlockAudioForIOS) {
-                this.unlockAudioForIOS();
-            }
-            this.debug("Attempting to resume audio context on game start");
+        // Make sure audio is ready on game start
+        if (this.soundEnabled) {
+            this.debug("Initializing sound on game start");
+            this.playInitialSound();
         }
-
-        // Play a test sound to enable audio context
-        this.playInitialSound();
     }
     
     // Handle window resize
@@ -1172,9 +1204,8 @@ class PongGame {
         soundCheckbox.checked = this.soundEnabled;
         soundCheckbox.style.cursor = 'pointer';
         
-        // For iOS, make the entire label clickable
-        soundLabel.onclick = () => {
-            soundCheckbox.checked = !soundCheckbox.checked;
+        // Add change event listener (avoid using onclick)
+        soundCheckbox.addEventListener('change', () => {
             this.soundEnabled = soundCheckbox.checked;
             
             // Update the start screen toggle too
@@ -1185,16 +1216,11 @@ class PongGame {
             
             // Play a test sound if enabled
             if (this.soundEnabled) {
-                // For iOS, we may need to unlock audio again
-                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-                if (isIOS && this.unlockAudioForIOS) {
-                    this.unlockAudioForIOS();
-                }
                 this.playInitialSound();
             }
             
             this.debug("Sound " + (this.soundEnabled ? "enabled" : "disabled"));
-        };
+        });
         
         // Assemble the elements
         soundLabel.appendChild(soundText);
@@ -1205,36 +1231,6 @@ class PongGame {
         document.body.appendChild(soundToggleContainer);
     }
     
-    // Play a silent test sound to kick-start audio context
-    playInitialSound() {
-        this.debug("Attempting to play initial sound");
-        
-        if (!this.audioContext) {
-            this.debug("No audio context available for initial sound");
-            return;
-        }
-        
-        // For iOS, we need special handling
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-        if (isIOS) {
-            this.debug("iOS device detected, using special audio unlock");
-            this.unlockAudioForIOS();
-        }
-        
-        // Try to resume the audio context
-        if (this.audioContext.state === 'suspended') {
-            this.audioContext.resume().then(() => {
-                this.debug("Audio context resumed in playInitialSound");
-                this._playActualSound('bounce');
-            }).catch(err => {
-                this.debug("Failed to resume audio context: " + err);
-            });
-        } else {
-            // Context is already running, play sound directly
-            this._playActualSound('bounce');
-        }
-    }
-
     // Create view mode toggle for the main game panel
     createViewModeToggle() {
         // Check if it already exists

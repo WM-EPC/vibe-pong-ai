@@ -127,6 +127,23 @@
             height: 0;
             width: 0;
         }
+        /* iOS-specific checkbox styling */
+        @supports (-webkit-touch-callout: none) {
+            .sound-toggle input {
+                /* Make iOS checkbox larger and more tappable */
+                position: relative;
+                opacity: 1;
+                height: 20px;
+                width: 20px;
+                margin-left: 10px;
+                cursor: pointer;
+            }
+            
+            /* Hide the slider on iOS as we're showing the regular checkbox */
+            .toggle-slider {
+                display: none;
+            }
+        }
         .toggle-slider {
             position: relative;
             display: inline-block;
@@ -250,7 +267,7 @@
                 Tap screen to start
             </div>
         </div>
-        <label class="sound-toggle" onclick="document.getElementById('soundToggle').click()">
+        <label class="sound-toggle">
             <span class="setting-label">Sound</span>
             <input type="checkbox" id="soundToggle" checked aria-label="Enable sound">
             <span class="toggle-slider" role="presentation"></span>
