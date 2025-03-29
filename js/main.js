@@ -113,6 +113,13 @@ class PongGame {
                 soundToggle.addEventListener('change', () => {
                     this.soundEnabled = soundToggle.checked;
                     this.debug("Sound " + (this.soundEnabled ? "enabled" : "disabled"));
+                    
+                    // On iOS, enabling sound should also try to resume the audio context
+                    if (this.soundEnabled && this.audioContext && this.audioContext.state === 'suspended') {
+                        this.resumeAudio();
+                        // Play a silent test sound to activate audio
+                        this.playInitialSound();
+                    }
                 });
                 // Initialize sound state from checkbox
                 this.soundEnabled = soundToggle.checked;
@@ -184,19 +191,38 @@ class PongGame {
             // Initialize audio context to bypass autoplay restrictions
             try {
                 // Just create and start an audio context to enable audio
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                this.audioContext = new AudioContext();
+                
+                // On iOS, we must resume the audio context during a user interaction
+                this.resumeAudio = () => {
+                    if (this.audioContext && this.audioContext.state === 'suspended') {
+                        this.audioContext.resume().then(() => {
+                            this.debug("Audio context resumed successfully");
+                        }).catch(err => {
+                            this.debug("Failed to resume audio context: " + err);
+                        });
+                    }
+                };
+                
+                // Add event listeners for user interactions to enable audio
+                const userInteractions = ['touchstart', 'touchend', 'mousedown', 'keydown'];
+                const resumeAudioBound = this.resumeAudio.bind(this);
+                
+                userInteractions.forEach(event => {
+                    window.addEventListener(event, resumeAudioBound, { once: true });
+                });
                 
                 // Create a silent oscillator to "warm up" the audio context
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
                 gainNode.gain.value = 0; // Silent
                 oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
+                gainNode.connect(this.audioContext.destination);
                 oscillator.start();
-                oscillator.stop(audioContext.currentTime + 0.001);
+                oscillator.stop(this.audioContext.currentTime + 0.001);
                 
-                this.audioContext = audioContext;
-                this.debug("Audio context initialized");
+                this.debug("Audio context initialized: " + this.audioContext.state);
             } catch (e) {
                 this.debug("Audio context initialization failed: " + e.message);
             }
@@ -209,6 +235,11 @@ class PongGame {
     // Play sound with Web Audio API
     playSound(soundType) {
         if (!this.soundEnabled) return;
+        
+        // Try to resume audio context for iOS
+        if (this.audioContext && this.audioContext.state === 'suspended') {
+            this.resumeAudio();
+        }
         
         try {
             // Use the appropriate sound creation function
@@ -740,11 +771,17 @@ class PongGame {
         if (this.elements.startScreen) {
             this.elements.startScreen.style.display = 'none';
         }
-        
+
         // Create in-game sound toggle
         this.createInGameSoundToggle();
         this.createViewModeToggle();  // Add view mode toggle
-        
+
+        // Resume audio context for iOS
+        if (this.audioContext && this.audioContext.state === 'suspended') {
+            this.resumeAudio();
+            this.debug("Attempting to resume audio context on game start");
+        }
+
         // Play a test sound to enable audio context
         this.playInitialSound();
     }
@@ -1125,29 +1162,23 @@ class PongGame {
     
     // Play an initial sound to enable audio context in browsers
     playInitialSound() {
-        if (!this.soundEnabled) return;
+        this.debug("Attempting to play initial sound");
         
-        try {
-            // Try to resume/activate the audio context if we have one
-            if (this.audioContext && this.audioContext.state === 'suspended') {
+        // Try to resume the audio context first
+        if (this.audioContext) {
+            if (this.audioContext.state === 'suspended') {
                 this.audioContext.resume().then(() => {
-                    this.debug("Audio context resumed");
-                    // Play a test sound
+                    this.debug("Audio context resumed in playInitialSound");
                     this.playSound('bounce');
                 }).catch(err => {
-                    this.debug("Audio context resume failed: " + err);
+                    this.debug("Failed to resume audio context: " + err);
                 });
             } else {
-                // Create a new audio context if we don't have one
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                this.audioContext = audioContext;
-                
-                // Play a test sound
+                // Context is already running, play sound directly
                 this.playSound('bounce');
             }
-        } catch (error) {
-            this.debug("Audio context initialization error: " + error);
-            console.warn("Audio context error:", error);
+        } else {
+            this.debug("No audio context available");
         }
     }
 
