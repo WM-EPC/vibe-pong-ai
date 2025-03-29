@@ -187,100 +187,40 @@ class PongGame {
             this.isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
             this.debug("Device detection - iOS: " + this.isIOS);
             
-            // Create audio elements for each sound
-            this.sounds = {
-                bounce: new Audio(),
-                wall: new Audio(),
-                score: new Audio()
+            // Directly use the sound creation functions from imported scripts
+            this.playSoundFunction = {
+                bounce: window.createBounceSound ? window.createBounceSound : null,
+                wall: window.createWallSound ? window.createWallSound : null,
+                score: window.createScoreSound ? window.createScoreSound : null
             };
             
-            // Set up audio element sources using base64 encoded data (short sounds)
-            // We'll use very short sound files directly embedded to avoid loading issues
-            const bounceSound = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA="; // Very short beep
-            const wallSound = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA="; // Very short beep
-            const scoreSound = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA="; // Very short beep
+            // Check if any sound functions are available
+            const hasSoundFunctions = this.playSoundFunction.bounce || 
+                                     this.playSoundFunction.wall || 
+                                     this.playSoundFunction.score;
             
-            // Assign sources
-            this.sounds.bounce.src = bounceSound;
-            this.sounds.wall.src = wallSound;
-            this.sounds.score.src = scoreSound;
-            
-            // Configure audio elements
-            Object.values(this.sounds).forEach(sound => {
-                sound.preload = 'auto';
-                sound.volume = 0.5;
-                
-                // Add listeners to track loading
-                sound.addEventListener('canplaythrough', () => {
-                    this.debug("Sound loaded and ready to play");
-                    this.audioReady = true;
-                });
-                
-                sound.addEventListener('error', (e) => {
-                    this.debug("Error loading sound: " + e);
-                });
-                
-                // iOS requires user interaction to play audio
-                if (this.isIOS) {
-                    // Set up listeners to unlock audio on iOS
-                    const unlockAudio = () => {
-                        // Play and immediately pause all sounds
-                        Object.values(this.sounds).forEach(s => {
-                            s.play().catch(e => this.debug("Audio play failed: " + e));
-                            s.pause();
-                            s.currentTime = 0;
-                        });
-                        
-                        this.debug("iOS: Audio unlocked by user interaction");
-                        this.audioReady = true;
-                        
-                        // Remove event listeners after one use
-                        ['touchstart', 'touchend', 'click', 'keydown'].forEach(event => {
-                            document.removeEventListener(event, unlockAudio, false);
-                        });
-                    };
-                    
-                    // Add event listeners for common user interactions
-                    ['touchstart', 'touchend', 'click', 'keydown'].forEach(event => {
-                        document.addEventListener(event, unlockAudio, false);
-                    });
-                }
-            });
-            
-            this.debug("Audio system initialized with HTML5 Audio");
+            if (hasSoundFunctions) {
+                this.debug("Sound functions detected and ready to use");
+                this.audioReady = true;
+            } else {
+                this.debug("WARNING: No sound functions found");
+            }
         } catch (error) {
             this.debug("WARNING: Could not initialize sounds: " + error.message);
         }
     }
     
-    // Play sound with HTML Audio elements
+    // Play sound
     playSound(soundType) {
-        if (!this.soundEnabled || !this.audioReady) return;
+        if (!this.soundEnabled) return;
         
         try {
-            const sound = this.sounds[soundType];
-            if (!sound) return;
-            
-            // Reset and play the sound
-            sound.currentTime = 0;
-            
-            // On iOS, we need to be more cautious
-            if (this.isIOS) {
-                // Create a promise to play the sound
-                const playPromise = sound.play();
-                
-                // Handle promise rejection (happens on iOS if audio not unlocked)
-                if (playPromise !== undefined) {
-                    playPromise.catch(error => {
-                        this.debug("Sound playback failed: " + error);
-                    });
-                }
-            } else {
-                // Just play the sound on other platforms
-                sound.play().catch(e => this.debug("Sound play error: " + e));
+            // Use the appropriate sound creation function
+            const soundFunction = this.playSoundFunction[soundType];
+            if (soundFunction) {
+                soundFunction();
+                this.debug(soundType + " sound played");
             }
-            
-            this.debug(soundType + " sound played");
         } catch (error) {
             // Log sound errors
             console.error("Sound error:", error);
@@ -288,21 +228,18 @@ class PongGame {
         }
     }
 
-    // Play a test sound to enable audio
+    // Play a test sound 
     playInitialSound() {
         this.debug("Attempting to play initial sound");
         
-        if (this.isIOS) {
-            // For iOS, we try playing all sounds with user interaction
-            Object.values(this.sounds).forEach(sound => {
-                sound.play().catch(e => {});
-                sound.pause();
-                sound.currentTime = 0;
-            });
-            this.audioReady = true;
-        } else {
-            // For other platforms, just try the bounce sound
-            this.playSound('bounce');
+        // Just try to play a bounce sound for testing
+        if (this.soundEnabled && this.playSoundFunction.bounce) {
+            try {
+                this.playSoundFunction.bounce();
+                this.debug("Initial sound played successfully");
+            } catch (e) {
+                this.debug("Initial sound failed: " + e);
+            }
         }
     }
 
@@ -849,11 +786,8 @@ class PongGame {
         this.createInGameSoundToggle();
         this.createViewModeToggle();  // Add view mode toggle
 
-        // Make sure audio is ready on game start
-        if (this.soundEnabled) {
-            this.debug("Initializing sound on game start");
-            this.playInitialSound();
-        }
+        // Initialize game sounds
+        this.playInitialSound();
     }
     
     // Handle window resize
@@ -1177,11 +1111,10 @@ class PongGame {
         soundToggleContainer.style.top = '10px';
         soundToggleContainer.style.left = '10px';
         soundToggleContainer.style.zIndex = '25';
-        soundToggleContainer.style.display = 'flex';
-        soundToggleContainer.style.alignItems = 'center';
-        soundToggleContainer.style.background = 'rgba(0, 0, 0, 0.5)';
-        soundToggleContainer.style.padding = '5px 10px';
-        soundToggleContainer.style.borderRadius = '5px';
+        soundToggleContainer.style.background = 'rgba(0, 0, 0, 0.6)';
+        soundToggleContainer.style.padding = '8px 15px';
+        soundToggleContainer.style.borderRadius = '8px';
+        soundToggleContainer.style.border = '1px solid #00c3ff';
         
         // Create label
         const soundLabel = document.createElement('label');
@@ -1191,21 +1124,25 @@ class PongGame {
         soundLabel.style.color = 'white';
         soundLabel.style.fontFamily = 'Orbitron, sans-serif';
         soundLabel.style.fontSize = '14px';
+        soundLabel.style.fontWeight = 'bold';
         
         // Create text
         const soundText = document.createElement('span');
         soundText.textContent = 'Sound';
         soundText.style.marginRight = '8px';
         
-        // Create checkbox
+        // Create checkbox with direct styling
         const soundCheckbox = document.createElement('input');
         soundCheckbox.type = 'checkbox';
         soundCheckbox.id = 'inGameSoundToggle';
         soundCheckbox.checked = this.soundEnabled;
+        soundCheckbox.style.width = '20px';
+        soundCheckbox.style.height = '20px';
         soundCheckbox.style.cursor = 'pointer';
+        soundCheckbox.style.marginLeft = '10px';
         
-        // Add change event listener (avoid using onclick)
-        soundCheckbox.addEventListener('change', () => {
+        // Add direct event listener
+        soundCheckbox.addEventListener('click', () => {
             this.soundEnabled = soundCheckbox.checked;
             
             // Update the start screen toggle too

@@ -119,62 +119,25 @@
             display: flex;
             align-items: center;
             cursor: pointer;
+            padding: 8px 15px;
+            background-color: rgba(0, 0, 0, 0.6);
+            border-radius: 8px;
+            border: 1px solid #00c3ff;
         }
         .sound-toggle input {
-            position: absolute;
-            opacity: 0;
+            margin-left: 10px;
+            width: 20px;
+            height: 20px;
             cursor: pointer;
-            height: 0;
-            width: 0;
-        }
-        /* iOS-specific checkbox styling */
-        @supports (-webkit-touch-callout: none) {
-            .sound-toggle input {
-                /* Make iOS checkbox larger and more tappable */
-                position: relative;
-                opacity: 1;
-                height: 20px;
-                width: 20px;
-                margin-left: 10px;
-                cursor: pointer;
-            }
-            
-            /* Hide the slider on iOS as we're showing the regular checkbox */
-            .toggle-slider {
-                display: none;
-            }
+            accent-color: #00c3ff;
         }
         .toggle-slider {
-            position: relative;
-            display: inline-block;
-            width: 60px;
-            height: 30px;
-            background-color: rgba(0, 0, 0, 0.4);
-            border-radius: 30px;
-            border: 2px solid #00c3ff;
-            margin-left: 10px;
-            transition: all 0.3s;
-        }
-        .toggle-slider:before {
-            position: absolute;
-            content: "";
-            height: 24px;
-            width: 24px;
-            left: 3px;
-            bottom: 3px;
-            background-color: white;
-            border-radius: 50%;
-            transition: all 0.3s;
-        }
-        input:checked + .toggle-slider {
-            background-color: rgba(0, 195, 255, 0.3);
-            box-shadow: 0 0 15px rgba(0, 195, 255, 0.5);
-        }
-        input:checked + .toggle-slider:before {
-            transform: translateX(30px);
+            display: none;
         }
         .setting-label {
             margin-right: 8px;
+            color: white;
+            font-weight: bold;
         }
         
         /* Mobile instructions */
@@ -270,7 +233,6 @@
         <label class="sound-toggle">
             <span class="setting-label">Sound</span>
             <input type="checkbox" id="soundToggle" checked aria-label="Enable sound">
-            <span class="toggle-slider" role="presentation"></span>
         </label>
     </div>
     
