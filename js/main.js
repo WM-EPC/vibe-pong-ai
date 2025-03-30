@@ -23,8 +23,8 @@ const soundData = {
     bounce: "data:audio/wav;base64,UklGRsgBAABXQVZFZm10IBAAAAABAAEARKwAAESsAAABAAgAZGF0YaQBAACAgICAgICAgICAgIB4eIB/f3+AgYGBgYGBgICAgICAgHZ2gICAgH9/f39+foCAgICAgICAgICAgICAfX2AgICAgH9/f39/f4CAgICAgICAd3eAgH9/f39/f4CAgICAgICAgICAgICAeXl/f4GBf39/f4CAgICAgICAgHx8f39/f39/f4GBgICAgICA//+AgH19gICAgH9/f39/f4CAgICAgICAgICAgICAeHiAf39/gIGBgYGBgYCAgICAgHZ2gICAgH9/f39+foCAgICAgICAgICAgICAeHiAgICAgH9/f39/f4CAgICAgICAeHiAgH9/f39/f4CAgICAgICAgICAgICAenp/f4CAf39/f4CAgICAgICAgHt7f39/f39/f4CAgICAgICAeHj//4CAfX2AgICAgICAgICAgICAgICAgICAgICAgICAfn6AgICAgICAf39/f39/f3+AgICAgIB/f4CAf39/f4CAgICAgICAgIB9fYCAgIB/f39/f3+AgICAgICAAABAQJE5NCoAAAATSURBVFNwEEFQA0YySEsADwxBBAkiG0ZwZQ==",
     // Complementary mid-range sound for wall hit
     wall: "data:audio/wav;base64,UklGRqgBAABXQVZFZm10IBAAAAABAAEARKwAAESsAAABAAgAZGF0YYQBAACBgYGBgYGBgYGAf3t9fYCAgICAgICAgYGBgYCAfX19fYCAgICAgICAgYGBgX9+fn5+gICAgICAgICAgICAfn5+foCAgICAgICAgICAf39/f3+AgICAgICAgICAf4CAgICAgICAgH99fX19gICAgICAgICBgYGBgIB9fX19gICAgICAgICBgYGBf35+fn6AgICAgICAgICAgIB+fn5+gICAgICAgICAgIB/f39/f4CAgICAgICAgICAgICAgICAgIB/fX19fYCAgICAgICAgYGBgYCAe35+gICAgICAgICAgYGBgX9+fn5+gICAgICAgICAgICAf39/f3+AgICAgICAgICAgH9/f39/gICAgICAgICAgIB/f39/f4CAgICAgICAgICAf35/gICAAABAQEE5NCoAAAATSURBVAsCAxgABggHEAgBBwkFCQYAYk79",
-    // Success sound for score
-    score: "data:audio/wav;base64,UklGRrQFAABXQVZFZm10IBAAAAABAAEARKwAAESsAAABAAgAZGF0YZAFAAAAAAAAgH8AAH9/AH8AAH9/AAAAAAAAAAB/fwAAfwAAAAAAAAAAAH9/AAAAAAB/f39/AH8AAAB/fwAAAAAAAH8AAH9/AAAAAAAAAAAAAH8AAAAAAAAAAAAAAH8AAH9/AH8AAH9/AAAAAAAAAAAAfwB/AAAAAAAAAAAAAAAAAAAAAAAAgH8AAH8AAAAAAAAAAH9/AAAAAAB/f39/AH8AAAB/fwAAAAAAAH8AAH9/AAAAAAAAAAAAAH8AAAAAAAAAAAAAAH8AAH9/AH8AAH9/AAAAAAAAAAAA"
+    // Distinctive victory sound for scoring
+    score: "data:audio/wav;base64,UklGRiwDAABXQVZFZm10IBAAAAABAAEARKwAAESsAAABAAgAZGF0YQgDAACBgYGBgYGCgoKCgoKCgoKCg4ODgoKCgYGBgYGBgYGBgYCBgYCAgICAgICAgICAgICAgICBgYGBgYGBgYGBgYGBgYGBgYGBgoKCgoKDg4ODgoKCgoKCgYGBgICAgICAgH9/gICAf39/f39/f39/f39/f3+AgICAgICAgICAgICAgICAgICAgIGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYCAgICAgICAgICAgICAfn5+fn5+fn5+fn5+fn5+fn5+f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f3+AgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGBgYGBgYGBgYGBgYGBgYGBgYCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgIGBgICAf39/f39/f39/f39/f39/f4CAgICAgICAgICAgICAgICAgIGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYCAgICAgICAgICAgIGBgYGBgYGBgYGBgIGBgICAgICAgICAgICAf39/f39/f39/f39/f39/f39/f39/f39/f4CAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGAAAC/4QzH6SIAAAAASUVORK5CYII="
 };
 
 // Function to play a sound from a decoded buffer using Web Audio API
@@ -1445,8 +1445,23 @@ class PongGame {
             this.score.ai++;
             this.debug(`AI scores! Score: ${this.score.player}-${this.score.ai}`);
             this.updateScoreDisplay();
+            
+            // Play score sound
             this.playSound('score');
-            this.resetBall();
+            
+            // Hide the ball temporarily
+            this.objects.ball.visible = false;
+            
+            // Delay before resetting the ball
+            setTimeout(() => {
+                this.objects.ball.visible = true;
+                this.resetBall();
+                
+                // Play a serve sound (reusing bounce sound for now)
+                setTimeout(() => {
+                    this.playSound('bounce');
+                }, 100);
+            }, 800); // Delay of 800ms before serving new ball
         }
         
         // Ball past AI paddle (player scores)
@@ -1454,8 +1469,23 @@ class PongGame {
             this.score.player++;
             this.debug(`Player scores! Score: ${this.score.player}-${this.score.ai}`);
             this.updateScoreDisplay();
+            
+            // Play score sound
             this.playSound('score');
-            this.resetBall();
+            
+            // Hide the ball temporarily
+            this.objects.ball.visible = false;
+            
+            // Delay before resetting the ball
+            setTimeout(() => {
+                this.objects.ball.visible = true;
+                this.resetBall();
+                
+                // Play a serve sound (reusing bounce sound for now)
+                setTimeout(() => {
+                    this.playSound('bounce');
+                }, 100);
+            }, 800); // Delay of 800ms before serving new ball
         }
     }
     
