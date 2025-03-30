@@ -12,6 +12,8 @@ function unlockAudio() {
     if (audioUnlocked) return;
     
     try {
+        console.log("Attempting audio unlock");
+        
         // Create audio context
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         
@@ -25,13 +27,50 @@ function unlockAudio() {
         // Play the empty buffer (required for iOS)
         source.start(0);
         
-        // Also create and play a short silent audio element
-        // This dual approach helps ensure iOS audio works
-        const silentSound = new Audio("data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjMyLjEwNAAAAAAAAAAAAAAA//tQwAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAABAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV6urq6urq6urq6urq6urq6urq6urq6v////////////////////////////////8AAAAATGF2YzU4LjU0AAAAAAAAAAAAAAAAJAAAAAAAAAAAASDs90hvAAAA");
-        silentSound.play().catch(() => {});
+        // Create multiple audio elements with different formats
+        // This multi-pronged approach has better success on iOS
+        const sounds = [];
         
+        // Add silent MP3
+        const mp3Sound = new Audio("data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjMyLjEwNAAAAAAAAAAAAAAA//tQwAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAABAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV6urq6urq6urq6urq6urq6urq6urq6v////////////////////////////////8AAAAATGF2YzU4LjU0AAAAAAAAAAAAAAAAJAAAAAAAAAAAASDs90hvAAAA");
+        sounds.push(mp3Sound);
+        
+        // Add silent WAV
+        const wavSound = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA");
+        sounds.push(wavSound);
+        
+        // Force play all sounds
+        sounds.forEach(sound => {
+            // Use both play methods for maximum compatibility
+            try {
+                sound.play();
+            } catch(e) {}
+            
+            // Attach events to make sure playback happens
+            sound.addEventListener('play', () => {
+                setTimeout(() => {
+                    sound.pause();
+                    sound.currentTime = 0;
+                }, 1);
+            });
+            
+            // iOS sometimes requires a promise handler
+            const playPromise = sound.play();
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    // Playback started successfully
+                    sound.pause();
+                    sound.currentTime = 0;
+                }).catch(error => {
+                    // Auto-play was prevented - show UI to enable audio
+                    console.log("Audio play prevented: " + error);
+                });
+            }
+        });
+        
+        // Set audio as unlocked
         audioUnlocked = true;
-        console.log("Audio unlocked through user interaction");
+        console.log("Audio context and elements initialized - unlock attempt complete");
     } catch (e) {
         console.error("Error unlocking audio:", e);
     }
@@ -152,6 +191,9 @@ class PongGame {
         this.handleKeyDown = this.handleKeyDown.bind(this);
         this.handleKeyUp = this.handleKeyUp.bind(this);
         this.onWindowResize = this.onWindowResize.bind(this);
+        
+        // Expose game instance globally for sound toggle
+        window.game = this;
     }
     
     // Initialize the game
@@ -173,27 +215,9 @@ class PongGame {
                 });
             }
             
-            // Add event listener to sound toggle
-            const soundToggle = document.getElementById('soundToggle');
-            if (soundToggle) {
-                soundToggle.addEventListener('change', () => {
-                    this.soundEnabled = soundToggle.checked;
-                    this.debug("Sound " + (this.soundEnabled ? "enabled" : "disabled"));
-                    
-                    // On iOS, enabling sound should trigger unlocking if needed
-                    if (this.soundEnabled && this.isIOS && !audioUnlocked) {
-                        this.debug("Attempting to unlock iOS audio after sound enabled");
-                        unlockAudio();
-                    }
-                    
-                    // Play a test sound if enabled
-                    if (this.soundEnabled) {
-                        this.playInitialSound();
-                    }
-                });
-                // Initialize sound state from checkbox
-                this.soundEnabled = soundToggle.checked;
-            }
+            // Initialize sound state (using the new approach)
+            // The sound state is now controlled by the external toggle
+            this.soundEnabled = true;
             
             // Setup touch controls
             this.setupTouchControls();
@@ -258,44 +282,56 @@ class PongGame {
             this.isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
             this.debug("Device detection - iOS: " + this.isIOS);
             
-            // Set the audio ready flag to track the global state
-            this.audioReady = false;
+            // Ensure audio is unlocked right away if possible
+            if (!audioUnlocked) {
+                unlockAudio();
+            }
             
-            // Watch the global audio unlocked state
-            const checkUnlocked = () => {
-                if (audioUnlocked && !this.audioReady) {
-                    this.audioReady = true;
-                    this.debug("Audio system ready - global unlock detected");
-                    
-                    // Try playing a sound once we're ready
-                    if (this.soundEnabled) {
-                        setTimeout(() => this.playInitialSound(), 300);
+            // Store audio functions directly
+            this.playSoundFunction = {
+                bounce: () => {
+                    if (window.createBounceSound) {
+                        try {
+                            window.createBounceSound();
+                            // Force unlock if needed when sound played
+                            if (!audioUnlocked) unlockAudio();
+                        } catch (e) {
+                            console.error("Bounce sound error:", e);
+                        }
+                    }
+                },
+                wall: () => {
+                    if (window.createWallSound) {
+                        try {
+                            window.createWallSound();
+                            // Force unlock if needed when sound played
+                            if (!audioUnlocked) unlockAudio();
+                        } catch (e) {
+                            console.error("Wall sound error:", e);
+                        }
+                    }
+                },
+                score: () => {
+                    if (window.createScoreSound) {
+                        try {
+                            window.createScoreSound();
+                            // Force unlock if needed when sound played
+                            if (!audioUnlocked) unlockAudio();
+                        } catch (e) {
+                            console.error("Score sound error:", e);
+                        }
                     }
                 }
-                
-                // Check again in a moment if not ready yet
-                if (!this.audioReady) {
-                    setTimeout(checkUnlocked, 500);
-                }
-            };
-            
-            // Start checking
-            checkUnlocked();
-            
-            // Directly use the sound creation functions from imported scripts
-            this.playSoundFunction = {
-                bounce: window.createBounceSound ? window.createBounceSound : null,
-                wall: window.createWallSound ? window.createWallSound : null,
-                score: window.createScoreSound ? window.createScoreSound : null
             };
             
             // Check if any sound functions are available
-            const hasSoundFunctions = this.playSoundFunction.bounce || 
-                                     this.playSoundFunction.wall || 
-                                     this.playSoundFunction.score;
+            const hasSoundFunctions = window.createBounceSound || 
+                                     window.createWallSound || 
+                                     window.createScoreSound;
             
             if (hasSoundFunctions) {
                 this.debug("Sound functions detected and ready to use");
+                this.audioReady = true;
             } else {
                 this.debug("WARNING: No sound functions found");
             }
@@ -306,92 +342,39 @@ class PongGame {
     
     // Play sound
     playSound(soundType) {
+        // Don't try to play sounds if they're disabled
         if (!this.soundEnabled) return;
         
-        // Always try to ensure audio is unlocked before playing
-        // This handles cases where iOS might have reset permissions
+        // Unlock audio if needed (iOS safety check)
         if (!audioUnlocked) {
-            this.debug("Audio not unlocked, attempting to unlock");
             unlockAudio();
-            
-            // For iOS, wait for the next event loop to attempt sound
-            if (this.isIOS) {
-                setTimeout(() => {
-                    if (audioUnlocked) {
-                        this._attemptPlaySound(soundType);
-                    } else {
-                        this.debug("Audio still locked, sound will not play");
-                    }
-                }, 100);
-                return;
-            }
         }
         
-        this._attemptPlaySound(soundType);
-    }
-
-    // Helper method to attempt playing a sound
-    _attemptPlaySound(soundType) {
+        // Just directly call the function
         try {
-            // Use the appropriate sound creation function
-            const soundFunction = this.playSoundFunction[soundType];
-            if (soundFunction) {
-                // Wrap sound play in a try-catch and use a small timeout
-                // This helps iOS audio play more reliably
-                setTimeout(() => {
-                    try {
-                        soundFunction();
-                        this.debug(soundType + " sound played");
-                    } catch (e) {
-                        this.debug("Sound play error: " + e);
-                    }
-                }, 0);
+            const soundFunc = this.playSoundFunction[soundType];
+            if (soundFunc) {
+                // Call the function which handles its own error cases
+                soundFunc();
             }
         } catch (error) {
-            // Log sound errors
-            console.error("Sound error:", error);
-            this.debug("Sound error: " + error);
+            console.error("Sound playback error:", error);
         }
     }
 
-    // Play a test sound
+    // Play a test sound for initialization
     playInitialSound() {
-        this.debug("Attempting to play initial sound");
+        this.debug("Playing initial sound");
         
-        // For iOS, make sure audio is unlocked
+        // Always try to unlock audio first
         if (!audioUnlocked) {
-            this.debug("Audio not unlocked yet, attempting unlock");
             unlockAudio();
-            
-            // Add a retry mechanism for iOS
-            if (this.isIOS) {
-                // Try a few times with increasing delays
-                let attempts = 0;
-                const maxAttempts = 3;
-                
-                const tryPlay = () => {
-                    attempts++;
-                    if (audioUnlocked) {
-                        this.debug("Audio unlocked, trying to play initial sound now");
-                        // Now that audio is unlocked, try to play a sound
-                        this._attemptPlaySound('bounce');
-                    } else if (attempts < maxAttempts) {
-                        // Try again with increased delay
-                        this.debug(`Unlock attempt ${attempts} failed, retrying in ${attempts * 200}ms`);
-                        setTimeout(tryPlay, attempts * 200);
-                    } else {
-                        this.debug("Failed to unlock audio after multiple attempts");
-                    }
-                };
-                
-                // Start the retry process
-                setTimeout(tryPlay, 100);
-                return;
-            }
         }
         
-        // For non-iOS or already unlocked audio
-        this._attemptPlaySound('bounce');
+        // Just try the bounce sound
+        if (this.soundEnabled) {
+            this.playSound('bounce');
+        }
     }
 
     // Setup touch controls for mobile devices
@@ -1274,68 +1257,84 @@ class PongGame {
         soundToggleContainer.style.padding = '8px 15px';
         soundToggleContainer.style.borderRadius = '8px';
         soundToggleContainer.style.border = '1px solid #00c3ff';
-        soundToggleContainer.style.cursor = 'pointer'; // Make entire container clickable
         
-        // Create label
-        const soundLabel = document.createElement('div'); // Changed to div for more reliable clicking
-        soundLabel.style.display = 'flex';
-        soundLabel.style.alignItems = 'center';
-        soundLabel.style.color = 'white';
-        soundLabel.style.fontFamily = 'Orbitron, sans-serif';
-        soundLabel.style.fontSize = '14px';
-        soundLabel.style.fontWeight = 'bold';
+        // Create button for more reliable control (especially on iOS)
+        const soundToggleButton = document.createElement('button');
+        soundToggleButton.id = 'inGameSoundToggleButton';
+        soundToggleButton.style.display = 'flex';
+        soundToggleButton.style.alignItems = 'center';
+        soundToggleButton.style.background = 'none';
+        soundToggleButton.style.border = 'none';
+        soundToggleButton.style.padding = '0';
+        soundToggleButton.style.color = 'white';
+        soundToggleButton.style.fontFamily = 'Orbitron, sans-serif';
+        soundToggleButton.style.fontSize = '14px';
+        soundToggleButton.style.fontWeight = 'bold';
+        soundToggleButton.style.cursor = 'pointer';
+        soundToggleButton.style.outline = 'none';
         
-        // Create text
+        // Label text
         const soundText = document.createElement('span');
         soundText.textContent = 'Sound';
         soundText.style.marginRight = '8px';
         
-        // Create checkbox with direct styling
-        const soundCheckbox = document.createElement('input');
-        soundCheckbox.type = 'checkbox';
-        soundCheckbox.id = 'inGameSoundToggle';
-        soundCheckbox.checked = this.soundEnabled;
-        soundCheckbox.style.width = '20px';
-        soundCheckbox.style.height = '20px';
-        soundCheckbox.style.cursor = 'pointer';
-        soundCheckbox.style.marginLeft = '10px';
+        // Visual indicator
+        const soundIndicator = document.createElement('span');
+        soundIndicator.id = 'inGameSoundIndicator';
+        soundIndicator.style.display = 'inline-block';
+        soundIndicator.style.width = '14px';
+        soundIndicator.style.height = '14px';
+        soundIndicator.style.borderRadius = '50%';
+        soundIndicator.style.backgroundColor = this.soundEnabled ? '#00c3ff' : '#666';
+        soundIndicator.style.boxShadow = this.soundEnabled ? '0 0 5px #00c3ff' : 'none';
         
-        // Key improvement: Use the container click instead of relying on checkbox
-        soundToggleContainer.addEventListener('click', (e) => {
-            // Prevent any default behaviors
+        // Update the indicator to match current state
+        const updateIndicator = () => {
+            if (this.soundEnabled) {
+                soundIndicator.style.backgroundColor = '#00c3ff';
+                soundIndicator.style.boxShadow = '0 0 5px #00c3ff';
+            } else {
+                soundIndicator.style.backgroundColor = '#666';
+                soundIndicator.style.boxShadow = 'none';
+            }
+        };
+        
+        // Add click handler to toggle sound
+        soundToggleButton.addEventListener('click', (e) => {
             e.preventDefault();
-            e.stopPropagation();
+            this.soundEnabled = !this.soundEnabled;
+            this.debug("Sound toggled to: " + (this.soundEnabled ? "on" : "off"));
             
-            // Toggle the checkbox
-            soundCheckbox.checked = !soundCheckbox.checked;
+            // Update visual state
+            updateIndicator();
             
-            // Update sound state
-            this.soundEnabled = soundCheckbox.checked;
-            this.debug("Sound toggled to: " + (this.soundEnabled ? "enabled" : "disabled"));
-            
-            // Update the start screen toggle too
-            const startScreenToggle = document.getElementById('soundToggle');
-            if (startScreenToggle) {
-                startScreenToggle.checked = this.soundEnabled;
+            // Update start screen toggle if it exists
+            if (window.toggleSound) {
+                window.toggleSound(this.soundEnabled);
             }
             
-            // Trigger a user interaction to unlock audio on iOS
+            // If sound enabled, try to play a sound and unlock audio if needed
             if (this.soundEnabled) {
-                // Force unlock audio (iOS needs this from user interaction)
+                // Force audio unlock (iOS)
                 unlockAudio();
-                // Add slight delay before playing to let unlock take effect
+                
+                // Try to play after a slight delay
                 setTimeout(() => {
                     this.playInitialSound();
                 }, 100);
             }
-            
-            return false; // Prevent any other handlers
         });
         
+        // Also add touch handler specifically for iOS
+        soundToggleButton.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            soundToggleButton.click(); // Trigger the click handler
+        }, false);
+        
         // Assemble the elements
-        soundLabel.appendChild(soundText);
-        soundLabel.appendChild(soundCheckbox);
-        soundToggleContainer.appendChild(soundLabel);
+        soundToggleButton.appendChild(soundText);
+        soundToggleButton.appendChild(soundIndicator);
+        soundToggleContainer.appendChild(soundToggleButton);
         
         // Add to document
         document.body.appendChild(soundToggleContainer);
