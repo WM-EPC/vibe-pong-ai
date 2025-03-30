@@ -17,16 +17,19 @@ let decodedBuffers = {
     score: null
 };
 
-// Base64-encoded audio data for sounds
+// Base64-encoded audio data for sounds - replace with actual sounds
 const soundData = {
-    bounce: "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQQAAAAAAA==",
-    wall: "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=",
-    score: "data:audio/wav;base64,UklGRioAAABXQVZFZm10IBAAAAABAAEARKwAAESsAAABAAgAZGF0YQAAAAA="
+    // Short beep sound for bounce
+    bounce: "data:audio/wav;base64,UklGRqQDAABXQVZFZm10IBAAAAABAAEAiBQAAIgUAAABAAgAZGF0YYADAACAgICAgICAgICAgICAgICAgICAgICAgICAgIB3d4CAenqAgHp6gIB3d4CAdXWAgIB3gH93doB/cXKAgHJzgH9+f4B/goKAgIKCgICAgICAfX2AgICAgIBeXoCAgICAgHV1gICAgICAgICAfX2AgICAgIB1dYCAbm6AgICAgIAAAICAgICAgICAgICAgICAgICAgICAgICAgICAenmAgHd3gIB6eoCAdXWAgHd3gIB6eoCAgICAf3l5gIBxcYCAfX2AgIGBgIBaWoCAgoKAgIKCgICAgICAZmaAgICAgIBmZoCAgICAgHp6gICAgICAgICAgICAgICAgICAdXWAgAAAAICAgICAgICAgICAgICAgICAgICAgICAgICAf39/gIB/f4CAf3+AgH9/gIB9fYCAf3+AgICAgIB6eoCAfn6AgICAgIB0dICAgYGAgGpqgICCgoCAe3uAgH19gIB+foCAgICAgICAgIB5eYCAgICAgICAgIB9fYCAgICAgHBwgIAAAICAgICAgICAgICAgICAgICAgICAgICAgICAenqAgHx8gIB6eoCAfX2AgHp6gIB+foCAgICAgHZ2gIB5eYCAfHyAgHt7gIBzc4CAgYGAgIKCgIB+foCAgICAgHZ2gIAcHICAgICAgBwcgICAgICAfHyAgICAgICAgICAgICAgICAgHp6gIAAAACAgICAgICAgICAgICAgICAgICAgICAgICAgH19gIB/f4CAf3+AgH5+gIB+foCAgICAgICAgIB4eICAfHyAgH5+gIB7e4CAcnKAgIODgIB5eYCAe3uAgIKCgIBvb4CAgICAgICAgICAgICAgICAgICAgICAgICAgHp6gICAgICAc3OAgAAAAICAgICAgICAgICAgICAgICAgICAgICAgICAf3+AgH5+gIB+foCAfn6AgH9/gICAgICAgICAgHh4gIB6eoCAfX2AgHl5gIB4eICAgYGAgIODgICAgICAgICAgG5ugIAREYCAgICAgICAgICAgICAfn6AgICAgICAgICAgICAgICAgHZ2gIAAAACAgICAgICAgICAgICAgICAgICAgICAgICAgH5+gIB+foCAfn6AgHx8gIB/f4CAgICAgICAgIB6eoCAfHyAgH19gIB6eoCAdnaAgIGBgICDg4CAgYGAgICAgIBtbYCA//+AgICAgIB/f4CAgICAgHx8gICAgICAgICAgICAgICAgIB7e4CAAAA=",
+    // Short deeper sound for wall hit
+    wall: "data:audio/wav;base64,UklGRtwCAABXQVZFZm10IBAAAAABAAEARKwAAESsAAABAAgAZGF0YbgCAACBgYGBgYF+fn5+fn5+goKCgoKCfn5+fn5+foGBgYGBgX5+fn5+fn6CgoKCgoJ+fn5+fn5+gYGBgYGBfX19fX19fYKCgoKCgn19fX19fX2BgYGBgYF9fX19fX19goKCgoKCfX19fX19fYGBgYGBgX19fX19fX2CgoKCgoJ9fX19fX19gICAgICAfHx8fHx8fIKCgoKCgnx8fHx8fHyAgICAgIB8fHx8fHx8goKCgoKCfHx8fHx8fICAgICAgHx8fHx8fHyCgoKCgoJ8fHx8fHx8gICAgICAfHx8fHx8fIKCgoKCgnx8fHx8fHyAgICAgIB7e3t7e3t7goKCgoKCe3t7e3t7e4CAgICAgHt7e3t7e3uCgoKCgoJ7e3t7e3t7gICAgICAe3t7e3t7e4KCgoKCgnt7e3t7e3uAgICAgIB7e3t7e3t7goKCgoKCe3t7e3t7e4CAgICAgHp6enp6enqCgoKCgoJ6enp6enpfX19fX18aGhoaGhoaSkpKSkpKBQUFBQUFBWRkZGRkZCQkJCQkJCR8fHx8fHwaGhoaGhoaY2NjY2NjJycnJycnJ39/f39/fxgYGBgYGBhkZGRkZGQqKioqKioqgYGBgYGBGBgYGBgYGGVlZWVlZSwsLCwsLCyCgoKCgoIWFhYWFhYWZmZmZmZmLi4uLi4uLoODg4ODgxUVFRUVFRVnZ2dnZ2cvLy8vLy8vg4ODg4ODFBQUFBQUFGdnZ2dnZzAwMDAwMDCDg4ODg4MUFBQUFBQUaGhoaGhoMjIyMjIyMoSEhISEhBMTExMTExNpaWlpaWkzMzMzMzMzhISEhISEEhISEhISEmpqampqajQ0NDQ0NDSEhISEhIQSEhISEhISampqamvJDiEpAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDEzLTEwLTA2VDAxOjI2OjA2LTA0OjAwvHCqZgAAACV0RVh0ZGF0ZTptb2RpZnkAMjAxMy0xMC0wNlQwMToyNjowNi0wNDowMM0tEtoAAAAASUVORK5CYII=",
+    // Success sound for score
+    score: "data:audio/wav;base64,UklGRrQFAABXQVZFZm10IBAAAAABAAEARKwAAESsAAABAAgAZGF0YZAFAAAAAAAAgH8AAH9/AH8AAH9/AAAAAAAAAAB/fwAAfwAAAAAAAAAAAH9/AAAAAAB/f39/AH8AAAB/fwAAAAAAAH8AAH9/AAAAAAAAAAAAAH8AAAAAAAAAAAAAAH8AAH9/AH8AAH9/AAAAAAAAgH8AAH8AAAAAAAAAAAAAAAAAAAAAAH9/AAAAAAAAAAB/fwAAfwAAAAAAAAAAAH9/AAAAAAB/f39/AH8AAAB/fwAAAAAAAH8AAH9/AAAAAAAAAAAAAH8AAAAAAAAAAAAAAH8AAH9/AH8AAH9/AAAAAAAAgH8AAH8AAAAAAAAAAAAAAAAAAAAAAH9/AAAAAAAAAAB/fwAAfwAAAAAAAAAAAH9/AAAAAAB/f39/AH8AAAB/fwAAAAAAAH8AAH9/AAAAAAAAAAAAAH8AAAAAAAAAAAAAAH8AAH9/AH8AAH9/AAAAAAAAAAAAfwB/AAAAAAAAAAAAAAAAAAAAAAAAgH8AAH8AAAAAAAAAAH9/AAAAAAB/f39/AH8AAAB/fwAAAAAAAH8AAH9/AAAAAAAAAAAAAH8AAAAAAAAAAAAAAH8AAH9/AH8AAH9/AAAAAAAAAAAAfwB/AAAAAAAAAAAAAAAAAAAAAAAAgH8AAH8AAAAAAAAAAH9/AAAAAAB/f39/AH8AAAB/fwAAAAAAAH8AAH9/AAAAAAAAAAAAAH8AAAAAAAAAAAAAAH8AAH9/AH8AAH9/AAAAAAAAAAAA"
 };
 
 // Function to play a sound from a decoded buffer using Web Audio API
 function playSoundFromBuffer(soundType) {
-    if (!audioCtx || !audioUnlocked) return;
+    if (!audioCtx || !audioUnlocked) return false;
     
     try {
         // Create a new audio source for this play
@@ -37,6 +40,7 @@ function playSoundFromBuffer(soundType) {
             source.buffer = decodedBuffers[soundType];
             source.connect(audioCtx.destination);
             source.start(0);
+            console.log(`Playing ${soundType} sound from buffer`);
             return true;
         }
         
@@ -49,33 +53,49 @@ function playSoundFromBuffer(soundType) {
                 return false;
             }
             
-            // Convert base64 to array buffer
-            const binaryString = window.atob(base64String);
-            const len = binaryString.length;
-            const bytes = new Uint8Array(len);
-            for (let i = 0; i < len; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-            }
-            
-            // Decode the audio data
-            audioCtx.decodeAudioData(
-                bytes.buffer,
-                (decodedBuffer) => {
-                    // Store the decoded buffer for future use
-                    decodedBuffers[soundType] = decodedBuffer;
-                    
-                    // Create and play the source
-                    const newSource = audioCtx.createBufferSource();
-                    newSource.buffer = decodedBuffer;
-                    newSource.connect(audioCtx.destination);
-                    newSource.start(0);
-                },
-                (error) => {
-                    console.error("Error decoding audio data for", soundType, error);
+            try {
+                // Convert base64 to array buffer
+                const binaryString = window.atob(base64String);
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
                 }
-            );
-            
-            return true;
+                
+                // Decode the audio data
+                audioCtx.decodeAudioData(
+                    bytes.buffer,
+                    (decodedBuffer) => {
+                        // Store the decoded buffer for future use
+                        decodedBuffers[soundType] = decodedBuffer;
+                        console.log(`Decoded buffer for ${soundType}`);
+                        
+                        // Create and play the source
+                        const newSource = audioCtx.createBufferSource();
+                        newSource.buffer = decodedBuffer;
+                        newSource.connect(audioCtx.destination);
+                        newSource.start(0);
+                        console.log(`Playing ${soundType} sound after decoding`);
+                    },
+                    (error) => {
+                        console.error("Error decoding audio data for", soundType, error);
+                        // Fall back to script-based sound if available
+                        if (window[`create${soundType.charAt(0).toUpperCase() + soundType.slice(1)}Sound`]) {
+                            window[`create${soundType.charAt(0).toUpperCase() + soundType.slice(1)}Sound`]();
+                        }
+                    }
+                );
+                
+                return true;
+            } catch (e) {
+                console.error("Error processing audio data:", e);
+                // Fall back to script-based sound
+                if (window[`create${soundType.charAt(0).toUpperCase() + soundType.slice(1)}Sound`]) {
+                    window[`create${soundType.charAt(0).toUpperCase() + soundType.slice(1)}Sound`]();
+                    return true;
+                }
+                return false;
+            }
         }
         
         return false;
