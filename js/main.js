@@ -3,6 +3,36 @@ import * as THREE from 'three';
 // Using ES modules import through the importmap in the HTML
 // This allows us to use the latest Three.js version without bundling
 
+// Global audio unlocking mechanism for iOS and other platforms
+let audioCtx;
+let audioUnlocked = false;
+
+// Function to unlock audio on user interaction
+function unlockAudio() {
+    if (audioUnlocked) return;
+    
+    // Create audio context
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    // Create an empty buffer
+    const buffer = audioCtx.createBuffer(1, 1, 22050);
+    const source = audioCtx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(audioCtx.destination);
+    
+    // Play the empty buffer (required for iOS)
+    source.start(0);
+    
+    audioUnlocked = true;
+    console.log("Audio unlocked through user interaction");
+}
+
+// Add event listeners to unlock audio on user interaction
+document.addEventListener('touchstart', unlockAudio, { once: true });
+document.addEventListener('touchend', unlockAudio, { once: true });
+document.addEventListener('click', unlockAudio, { once: true });
+document.addEventListener('keydown', unlockAudio, { once: true });
+
 // Constants
 const GAME_CONFIG = {
     FIELD: {
@@ -114,7 +144,13 @@ class PongGame {
                     this.soundEnabled = soundToggle.checked;
                     this.debug("Sound " + (this.soundEnabled ? "enabled" : "disabled"));
                     
-                    // On iOS, enabling sound should trigger audio playback
+                    // On iOS, enabling sound should trigger unlocking if needed
+                    if (this.soundEnabled && this.isIOS && !audioUnlocked) {
+                        this.debug("Attempting to unlock iOS audio after sound enabled");
+                        unlockAudio();
+                    }
+                    
+                    // Play a test sound if enabled
                     if (this.soundEnabled) {
                         this.playInitialSound();
                     }
@@ -181,11 +217,32 @@ class PongGame {
         try {
             // Create an audio system that works better across devices including iOS
             this.soundEnabled = true;
-            this.audioReady = false;
             
             // Check if running on iOS
             this.isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
             this.debug("Device detection - iOS: " + this.isIOS);
+            
+            // For iOS, we need to ensure the global unlockAudio function is called on interaction
+            if (this.isIOS) {
+                this.debug("iOS detected - using audio unlock mechanism");
+                
+                // Add a listener to check when audio has been unlocked
+                const checkAudioUnlock = () => {
+                    if (audioUnlocked) {
+                        this.debug("Audio context unlocked - ready to play sounds");
+                        this.audioReady = true;
+                        return;
+                    }
+                    // Check again in a moment
+                    setTimeout(checkAudioUnlock, 500);
+                };
+                
+                // Start checking for audio unlock
+                checkAudioUnlock();
+            } else {
+                // For non-iOS, just mark audio as ready
+                this.audioReady = true;
+            }
             
             // Directly use the sound creation functions from imported scripts
             this.playSoundFunction = {
@@ -201,7 +258,6 @@ class PongGame {
             
             if (hasSoundFunctions) {
                 this.debug("Sound functions detected and ready to use");
-                this.audioReady = true;
             } else {
                 this.debug("WARNING: No sound functions found");
             }
@@ -213,6 +269,18 @@ class PongGame {
     // Play sound
     playSound(soundType) {
         if (!this.soundEnabled) return;
+        
+        // On iOS, ensure audio is unlocked before playing
+        if (this.isIOS && !audioUnlocked) {
+            this.debug("Cannot play sound yet - audio not unlocked on iOS");
+            return;
+        }
+        
+        // On non-iOS, ensure audio is ready
+        if (!this.isIOS && !this.audioReady) {
+            this.debug("Audio not ready yet");
+            return;
+        }
         
         try {
             // Use the appropriate sound creation function
@@ -228,9 +296,19 @@ class PongGame {
         }
     }
 
-    // Play a test sound 
+    // Play a test sound
     playInitialSound() {
         this.debug("Attempting to play initial sound");
+        
+        // For iOS, ensure audio context is unlocked before trying to play
+        if (this.isIOS) {
+            if (!audioUnlocked) {
+                this.debug("Cannot play initial sound - waiting for audio unlock on iOS");
+                // Unlock audio again if needed, just to be safe
+                unlockAudio();
+                return;
+            }
+        }
         
         // Just try to play a bounce sound for testing
         if (this.soundEnabled && this.playSoundFunction.bounce) {
@@ -787,7 +865,15 @@ class PongGame {
         this.createViewModeToggle();  // Add view mode toggle
 
         // Initialize game sounds
-        this.playInitialSound();
+        if (this.soundEnabled) {
+            // On iOS, unlock audio if needed when enabling sound
+            if (this.isIOS && !audioUnlocked) {
+                this.debug("Attempting to unlock iOS audio from in-game toggle");
+                unlockAudio();
+            }
+            
+            this.playInitialSound();
+        }
     }
     
     // Handle window resize
@@ -1153,6 +1239,12 @@ class PongGame {
             
             // Play a test sound if enabled
             if (this.soundEnabled) {
+                // On iOS, unlock audio if needed when enabling sound
+                if (this.isIOS && !audioUnlocked) {
+                    this.debug("Attempting to unlock iOS audio from in-game toggle");
+                    unlockAudio();
+                }
+                
                 this.playInitialSound();
             }
             
