@@ -1451,8 +1451,13 @@ class PongGame {
             this.debug(`AI scores! Score: ${this.score.player}-${this.score.ai}`);
             this.updateScoreDisplay();
             
-            // Play score sound once
-            this.playSound('score');
+            // Play failure sound when AI scores (player fails)
+            if (window.createFailureSound) {
+                window.createFailureSound();
+            } else {
+                // Fall back to regular score sound if failure sound isn't available
+                this.playSound('score');
+            }
             
             // Hide the ball immediately
             this.objects.ball.visible = false;
@@ -1481,7 +1486,7 @@ class PongGame {
             this.debug(`Player scores! Score: ${this.score.player}-${this.score.ai}`);
             this.updateScoreDisplay();
             
-            // Play score sound once
+            // Play victory sound when player scores
             this.playSound('score');
             
             // Hide the ball immediately
