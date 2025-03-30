@@ -24,7 +24,7 @@ const soundData = {
     // Short deeper sound for wall hit
     wall: "data:audio/wav;base64,UklGRtwCAABXQVZFZm10IBAAAAABAAEARKwAAESsAAABAAgAZGF0YbgCAACBgYGBgYF+fn5+fn5+goKCgoKCfn5+fn5+foGBgYGBgX5+fn5+fn6CgoKCgoJ+fn5+fn5+gYGBgYGBfX19fX19fYKCgoKCgn19fX19fX2BgYGBgYF9fX19fX19goKCgoKCfX19fX19fYGBgYGBgX19fX19fX2CgoKCgoJ9fX19fX19gICAgICAfHx8fHx8fIKCgoKCgnx8fHx8fHyAgICAgIB8fHx8fHx8goKCgoKCfHx8fHx8fICAgICAgHx8fHx8fHyCgoKCgoJ8fHx8fHx8gICAgICAfHx8fHx8fIKCgoKCgnx8fHx8fHyAgICAgIB7e3t7e3t7goKCgoKCe3t7e3t7e4CAgICAgHt7e3t7e3uCgoKCgoJ7e3t7e3t7gICAgICAe3t7e3t7e4KCgoKCgnt7e3t7e3uAgICAgIB7e3t7e3t7goKCgoKCe3t7e3t7e4CAgICAgHp6enp6enqCgoKCgoJ6enp6enpfX19fX18aGhoaGhoaSkpKSkpKBQUFBQUFBWRkZGRkZCQkJCQkJCR8fHx8fHwaGhoaGhoaY2NjY2NjJycnJycnJ39/f39/fxgYGBgYGBhkZGRkZGQqKioqKioqgYGBgYGBGBgYGBgYGGVlZWVlZSwsLCwsLCyCgoKCgoIWFhYWFhYWZmZmZmZmLi4uLi4uLoODg4ODgxUVFRUVFRVnZ2dnZ2cvLy8vLy8vg4ODg4ODFBQUFBQUFGdnZ2dnZzAwMDAwMDCDg4ODg4MUFBQUFBQUaGhoaGhoMjIyMjIyMoSEhISEhBMTExMTExNpaWlpaWkzMzMzMzMzhISEhISEEhISEhISEmpqampqajQ0NDQ0NDSEhISEhIQSEhISEhISampqamvJDiEpAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDEzLTEwLTA2VDAxOjI2OjA2LTA0OjAwvHCqZgAAACV0RVh0ZGF0ZTptb2RpZnkAMjAxMy0xMC0wNlQwMToyNjowNi0wNDowMM0tEtoAAAAASUVORK5CYII=",
     // Success sound for score
-    score: "data:audio/wav;base64,UklGRrQFAABXQVZFZm10IBAAAAABAAEARKwAAESsAAABAAgAZGF0YZAFAAAAAAAAgH8AAH9/AH8AAH9/AAAAAAAAAAB/fwAAfwAAAAAAAAAAAH9/AAAAAAB/f39/AH8AAAB/fwAAAAAAAH8AAH9/AAAAAAAAAAAAAH8AAAAAAAAAAAAAAH8AAH9/AH8AAH9/AAAAAAAAgH8AAH8AAAAAAAAAAAAAAAAAAAAAAH9/AAAAAAAAAAB/fwAAfwAAAAAAAAAAAH9/AAAAAAB/f39/AH8AAAB/fwAAAAAAAH8AAH9/AAAAAAAAAAAAAH8AAAAAAAAAAAAAAH8AAH9/AH8AAH9/AAAAAAAAgH8AAH8AAAAAAAAAAAAAAAAAAAAAAH9/AAAAAAAAAAB/fwAAfwAAAAAAAAAAAH9/AAAAAAB/f39/AH8AAAB/fwAAAAAAAH8AAH9/AAAAAAAAAAAAAH8AAAAAAAAAAAAAAH8AAH9/AH8AAH9/AAAAAAAAAAAAfwB/AAAAAAAAAAAAAAAAAAAAAAAAgH8AAH8AAAAAAAAAAH9/AAAAAAB/f39/AH8AAAB/fwAAAAAAAH8AAH9/AAAAAAAAAAAAAH8AAAAAAAAAAAAAAH8AAH9/AH8AAH9/AAAAAAAAAAAAfwB/AAAAAAAAAAAAAAAAAAAAAAAAgH8AAH8AAAAAAAAAAH9/AAAAAAB/f39/AH8AAAB/fwAAAAAAAH8AAH9/AAAAAAAAAAAAAH8AAAAAAAAAAAAAAH8AAH9/AH8AAH9/AAAAAAAAAAAA"
+    score: "data:audio/wav;base64,UklGRrQFAABXQVZFZm10IBAAAAABAAEARKwAAESsAAABAAgAZGF0YZAFAAAAAAAAgH8AAH9/AH8AAH9/AAAAAAAAAAB/fwAAfwAAAAAAAAAAAH9/AAAAAAB/f39/AH8AAAB/fwAAAAAAAH8AAH9/AAAAAAAAAAAAAH8AAAAAAAAAAAAAAH8AAH9/AH8AAH9/AAAAAAAAgH8AAH8AAAAAAAAAAAAAAAAAAAAAAH9/AAAAAAAAAAB/fwAAfwAAAAAAAAAAAH9/AAAAAAB/f39/AH8AAAB/fwAAAAAAAH8AAH9/AAAAAAAAAAAAAH8AAAAAAAAAAAAAAH8AAH9/AH8AAH9/AAAAAAAAAAAAfwB/AAAAAAAAAAAAAAAAAAAAAAAAgH8AAH8AAAAAAAAAAH9/AAAAAAB/f39/AH8AAAB/fwAAAAAAAH8AAH9/AAAAAAAAAAAAAH8AAAAAAAAAAAAAAH8AAH9/AH8AAH9/AAAAAAAAAAAA"
 };
 
 // Function to play a sound from a decoded buffer using Web Audio API
@@ -1200,7 +1200,6 @@ class PongGame {
 
         // Create in-game sound toggle
         this.createInGameSoundToggle();
-        this.createViewModeToggle();  // Add view mode toggle
 
         // Initialize game sounds
         if (this.soundEnabled) {
@@ -1523,7 +1522,7 @@ class PongGame {
         }
     }
     
-    // Create sound toggle for the main game panel
+    // Create in-game sound toggle
     createInGameSoundToggle() {
         // Check if it already exists
         if (document.getElementById('inGameSoundToggleContainer')) return;
@@ -1622,63 +1621,6 @@ class PongGame {
         document.body.appendChild(soundToggleContainer);
     }
     
-    // Create view mode toggle for the main game panel
-    createViewModeToggle() {
-        // Check if it already exists
-        if (document.getElementById('viewModeToggle')) return;
-        
-        // Create container
-        const viewModeContainer = document.createElement('div');
-        viewModeContainer.id = 'viewModeToggleContainer';
-        viewModeContainer.style.position = 'absolute';
-        viewModeContainer.style.top = '10px';
-        viewModeContainer.style.right = '10px';
-        viewModeContainer.style.zIndex = '25';
-        viewModeContainer.style.display = 'flex';
-        viewModeContainer.style.alignItems = 'center';
-        viewModeContainer.style.background = 'rgba(0, 0, 0, 0.5)';
-        viewModeContainer.style.padding = '5px 10px';
-        viewModeContainer.style.borderRadius = '5px';
-        
-        // Create label
-        const viewModeLabel = document.createElement('label');
-        viewModeLabel.style.display = 'flex';
-        viewModeLabel.style.alignItems = 'center';
-        viewModeLabel.style.cursor = 'pointer';
-        viewModeLabel.style.color = 'white';
-        viewModeLabel.style.fontFamily = 'Orbitron, sans-serif';
-        viewModeLabel.style.fontSize = '14px';
-        
-        // Create text
-        const viewModeText = document.createElement('span');
-        viewModeText.textContent = 'FP View';
-        viewModeText.style.marginRight = '8px';
-        
-        // Create checkbox
-        const viewModeCheckbox = document.createElement('input');
-        viewModeCheckbox.type = 'checkbox';
-        viewModeCheckbox.id = 'viewModeToggle';
-        viewModeCheckbox.checked = this.currentViewMode === GAME_CONFIG.VIEW_MODES.FIRST_PERSON;
-        viewModeCheckbox.style.cursor = 'pointer';
-        
-        // Add event listener
-        viewModeCheckbox.addEventListener('change', () => {
-            this.currentViewMode = viewModeCheckbox.checked ? 
-                GAME_CONFIG.VIEW_MODES.FIRST_PERSON : 
-                GAME_CONFIG.VIEW_MODES.THIRD_PERSON;
-            
-            this.debug("View mode changed to: " + this.currentViewMode);
-        });
-        
-        // Assemble the elements
-        viewModeLabel.appendChild(viewModeText);
-        viewModeLabel.appendChild(viewModeCheckbox);
-        viewModeContainer.appendChild(viewModeLabel);
-        
-        // Add to document
-        document.body.appendChild(viewModeContainer);
-    }
-
     // Handle page visibility changes (important for iOS audio)
     handleVisibilityChange() {
         if (document.visibilityState === 'visible') {
@@ -1771,7 +1713,6 @@ class PongGame {
         // Remove DOM elements we created
         const elementsToRemove = [
             document.getElementById('inGameSoundToggleContainer'),
-            document.getElementById('viewModeToggleContainer'),
             this.pauseOverlay
         ];
         
