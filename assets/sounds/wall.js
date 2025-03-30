@@ -4,18 +4,22 @@ function createWallSound() {
   const oscillator = audioContext.createOscillator();
   const gainNode = audioContext.createGain();
   
+  // Keep sine wave but use different frequency range from paddle sound
   oscillator.type = 'sine';
-  oscillator.frequency.setValueAtTime(150, audioContext.currentTime);
-  oscillator.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.1);
+  // Start higher and sweep lower - complementary to paddle sound
+  oscillator.frequency.setValueAtTime(500, audioContext.currentTime);
+  oscillator.frequency.exponentialRampToValueAtTime(300, audioContext.currentTime + 0.07);
   
-  gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-  gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+  // Slightly lower volume and faster decay
+  gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+  gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.12);
   
   oscillator.connect(gainNode);
   gainNode.connect(audioContext.destination);
   
   oscillator.start();
-  oscillator.stop(audioContext.currentTime + 0.15);
+  // Shorter duration to match the paddle sound style
+  oscillator.stop(audioContext.currentTime + 0.12);
   
   return audioContext;
 }
