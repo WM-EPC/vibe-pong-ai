@@ -186,11 +186,11 @@
         /* Game controls info box */
         #gameControls {
             position: absolute;
-            bottom: 10px;
-            right: 10px;
+            bottom: 45px; /* Moved up to avoid overlap with Vibe Jam banner */
+            right: 0px; /* Aligned to the right edge */
             background-color: rgba(0, 0, 0, 0.6);
             padding: 10px;
-            border-radius: 5px;
+            border-radius: 5px 0 0 5px; /* Rounded corners only on left side */
             font-size: 14px;
             z-index: 25;
             color: rgba(255, 255, 255, 0.8);
