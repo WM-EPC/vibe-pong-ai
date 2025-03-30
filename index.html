@@ -251,5 +251,29 @@
     
     <!-- Then our game code as a module -->
     <script type="module" src="./js/main.js"></script>
+
+    <script>
+    // Add reliable click handler for the sound toggle
+    document.addEventListener('DOMContentLoaded', function() {
+        const soundToggle = document.querySelector('.sound-toggle');
+        const soundCheckbox = document.getElementById('soundToggle');
+        
+        if (soundToggle && soundCheckbox) {
+            soundToggle.addEventListener('click', function(e) {
+                // For iOS compatibility, explicitly toggle the checkbox
+                // and trigger audio unlock
+                soundCheckbox.checked = !soundCheckbox.checked;
+                
+                // Force audio unlock on iOS
+                if (typeof unlockAudio === 'function') {
+                    unlockAudio();
+                }
+                
+                // Prevent default for reliability
+                e.preventDefault();
+            });
+        }
+    });
+    </script>
 </body>
 </html> 

@@ -7,31 +7,67 @@ import * as THREE from 'three';
 let audioCtx;
 let audioUnlocked = false;
 
-// Function to unlock audio on user interaction
+// Improved function to unlock audio on user interaction
 function unlockAudio() {
     if (audioUnlocked) return;
     
-    // Create audio context
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    
-    // Create an empty buffer
-    const buffer = audioCtx.createBuffer(1, 1, 22050);
-    const source = audioCtx.createBufferSource();
-    source.buffer = buffer;
-    source.connect(audioCtx.destination);
-    
-    // Play the empty buffer (required for iOS)
-    source.start(0);
-    
-    audioUnlocked = true;
-    console.log("Audio unlocked through user interaction");
+    try {
+        // Create audio context
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // iOS requires audio to start from a user interaction
+        // Create and play a silent buffer
+        const buffer = audioCtx.createBuffer(1, 1, 22050);
+        const source = audioCtx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(audioCtx.destination);
+        
+        // Play the empty buffer (required for iOS)
+        source.start(0);
+        
+        // Also create and play a short silent audio element
+        // This dual approach helps ensure iOS audio works
+        const silentSound = new Audio("data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjMyLjEwNAAAAAAAAAAAAAAA//tQwAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAABAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV6urq6urq6urq6urq6urq6urq6urq6v////////////////////////////////8AAAAATGF2YzU4LjU0AAAAAAAAAAAAAAAAJAAAAAAAAAAAASDs90hvAAAA");
+        silentSound.play().catch(() => {});
+        
+        audioUnlocked = true;
+        console.log("Audio unlocked through user interaction");
+    } catch (e) {
+        console.error("Error unlocking audio:", e);
+    }
 }
 
-// Add event listeners to unlock audio on user interaction
-document.addEventListener('touchstart', unlockAudio, { once: true });
-document.addEventListener('touchend', unlockAudio, { once: true });
-document.addEventListener('click', unlockAudio, { once: true });
-document.addEventListener('keydown', unlockAudio, { once: true });
+// Add a comprehensive set of event listeners to unlock audio
+function setupAudioUnlocking() {
+    // Common user interaction events that can unlock audio
+    const unlockEvents = [
+        'touchstart', 'touchend', 'mousedown', 'keydown',
+        'click', 'pointerdown', 'pointerup'
+    ];
+    
+    // Helper to clean up listeners once unlocked
+    const handleUnlock = () => {
+        unlockAudio();
+        
+        // Remove all listeners once unlocked to avoid duplicate calls
+        if (audioUnlocked) {
+            unlockEvents.forEach(eventType => {
+                document.removeEventListener(eventType, handleUnlock, true);
+                document.body.removeEventListener(eventType, handleUnlock, true);
+            });
+            console.log("Audio unlock successful - event listeners removed");
+        }
+    };
+    
+    // Add all listeners with capture to ensure they fire
+    unlockEvents.forEach(eventType => {
+        document.addEventListener(eventType, handleUnlock, true);
+        document.body.addEventListener(eventType, handleUnlock, true);
+    });
+}
+
+// Set up listeners immediately
+setupAudioUnlocking();
 
 // Constants
 const GAME_CONFIG = {
@@ -222,27 +258,29 @@ class PongGame {
             this.isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
             this.debug("Device detection - iOS: " + this.isIOS);
             
-            // For iOS, we need to ensure the global unlockAudio function is called on interaction
-            if (this.isIOS) {
-                this.debug("iOS detected - using audio unlock mechanism");
-                
-                // Add a listener to check when audio has been unlocked
-                const checkAudioUnlock = () => {
-                    if (audioUnlocked) {
-                        this.debug("Audio context unlocked - ready to play sounds");
-                        this.audioReady = true;
-                        return;
+            // Set the audio ready flag to track the global state
+            this.audioReady = false;
+            
+            // Watch the global audio unlocked state
+            const checkUnlocked = () => {
+                if (audioUnlocked && !this.audioReady) {
+                    this.audioReady = true;
+                    this.debug("Audio system ready - global unlock detected");
+                    
+                    // Try playing a sound once we're ready
+                    if (this.soundEnabled) {
+                        setTimeout(() => this.playInitialSound(), 300);
                     }
-                    // Check again in a moment
-                    setTimeout(checkAudioUnlock, 500);
-                };
+                }
                 
-                // Start checking for audio unlock
-                checkAudioUnlock();
-            } else {
-                // For non-iOS, just mark audio as ready
-                this.audioReady = true;
-            }
+                // Check again in a moment if not ready yet
+                if (!this.audioReady) {
+                    setTimeout(checkUnlocked, 500);
+                }
+            };
+            
+            // Start checking
+            checkUnlocked();
             
             // Directly use the sound creation functions from imported scripts
             this.playSoundFunction = {
@@ -270,24 +308,44 @@ class PongGame {
     playSound(soundType) {
         if (!this.soundEnabled) return;
         
-        // On iOS, ensure audio is unlocked before playing
-        if (this.isIOS && !audioUnlocked) {
-            this.debug("Cannot play sound yet - audio not unlocked on iOS");
-            return;
+        // Always try to ensure audio is unlocked before playing
+        // This handles cases where iOS might have reset permissions
+        if (!audioUnlocked) {
+            this.debug("Audio not unlocked, attempting to unlock");
+            unlockAudio();
+            
+            // For iOS, wait for the next event loop to attempt sound
+            if (this.isIOS) {
+                setTimeout(() => {
+                    if (audioUnlocked) {
+                        this._attemptPlaySound(soundType);
+                    } else {
+                        this.debug("Audio still locked, sound will not play");
+                    }
+                }, 100);
+                return;
+            }
         }
         
-        // On non-iOS, ensure audio is ready
-        if (!this.isIOS && !this.audioReady) {
-            this.debug("Audio not ready yet");
-            return;
-        }
-        
+        this._attemptPlaySound(soundType);
+    }
+
+    // Helper method to attempt playing a sound
+    _attemptPlaySound(soundType) {
         try {
             // Use the appropriate sound creation function
             const soundFunction = this.playSoundFunction[soundType];
             if (soundFunction) {
-                soundFunction();
-                this.debug(soundType + " sound played");
+                // Wrap sound play in a try-catch and use a small timeout
+                // This helps iOS audio play more reliably
+                setTimeout(() => {
+                    try {
+                        soundFunction();
+                        this.debug(soundType + " sound played");
+                    } catch (e) {
+                        this.debug("Sound play error: " + e);
+                    }
+                }, 0);
             }
         } catch (error) {
             // Log sound errors
@@ -300,25 +358,40 @@ class PongGame {
     playInitialSound() {
         this.debug("Attempting to play initial sound");
         
-        // For iOS, ensure audio context is unlocked before trying to play
-        if (this.isIOS) {
-            if (!audioUnlocked) {
-                this.debug("Cannot play initial sound - waiting for audio unlock on iOS");
-                // Unlock audio again if needed, just to be safe
-                unlockAudio();
+        // For iOS, make sure audio is unlocked
+        if (!audioUnlocked) {
+            this.debug("Audio not unlocked yet, attempting unlock");
+            unlockAudio();
+            
+            // Add a retry mechanism for iOS
+            if (this.isIOS) {
+                // Try a few times with increasing delays
+                let attempts = 0;
+                const maxAttempts = 3;
+                
+                const tryPlay = () => {
+                    attempts++;
+                    if (audioUnlocked) {
+                        this.debug("Audio unlocked, trying to play initial sound now");
+                        // Now that audio is unlocked, try to play a sound
+                        this._attemptPlaySound('bounce');
+                    } else if (attempts < maxAttempts) {
+                        // Try again with increased delay
+                        this.debug(`Unlock attempt ${attempts} failed, retrying in ${attempts * 200}ms`);
+                        setTimeout(tryPlay, attempts * 200);
+                    } else {
+                        this.debug("Failed to unlock audio after multiple attempts");
+                    }
+                };
+                
+                // Start the retry process
+                setTimeout(tryPlay, 100);
                 return;
             }
         }
         
-        // Just try to play a bounce sound for testing
-        if (this.soundEnabled && this.playSoundFunction.bounce) {
-            try {
-                this.playSoundFunction.bounce();
-                this.debug("Initial sound played successfully");
-            } catch (e) {
-                this.debug("Initial sound failed: " + e);
-            }
-        }
+        // For non-iOS or already unlocked audio
+        this._attemptPlaySound('bounce');
     }
 
     // Setup touch controls for mobile devices
@@ -1188,7 +1261,7 @@ class PongGame {
     // Create sound toggle for the main game panel
     createInGameSoundToggle() {
         // Check if it already exists
-        if (document.getElementById('inGameSoundToggle')) return;
+        if (document.getElementById('inGameSoundToggleContainer')) return;
         
         // Create container
         const soundToggleContainer = document.createElement('div');
@@ -1201,12 +1274,12 @@ class PongGame {
         soundToggleContainer.style.padding = '8px 15px';
         soundToggleContainer.style.borderRadius = '8px';
         soundToggleContainer.style.border = '1px solid #00c3ff';
+        soundToggleContainer.style.cursor = 'pointer'; // Make entire container clickable
         
         // Create label
-        const soundLabel = document.createElement('label');
+        const soundLabel = document.createElement('div'); // Changed to div for more reliable clicking
         soundLabel.style.display = 'flex';
         soundLabel.style.alignItems = 'center';
-        soundLabel.style.cursor = 'pointer';
         soundLabel.style.color = 'white';
         soundLabel.style.fontFamily = 'Orbitron, sans-serif';
         soundLabel.style.fontSize = '14px';
@@ -1227,9 +1300,18 @@ class PongGame {
         soundCheckbox.style.cursor = 'pointer';
         soundCheckbox.style.marginLeft = '10px';
         
-        // Add direct event listener
-        soundCheckbox.addEventListener('click', () => {
+        // Key improvement: Use the container click instead of relying on checkbox
+        soundToggleContainer.addEventListener('click', (e) => {
+            // Prevent any default behaviors
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Toggle the checkbox
+            soundCheckbox.checked = !soundCheckbox.checked;
+            
+            // Update sound state
             this.soundEnabled = soundCheckbox.checked;
+            this.debug("Sound toggled to: " + (this.soundEnabled ? "enabled" : "disabled"));
             
             // Update the start screen toggle too
             const startScreenToggle = document.getElementById('soundToggle');
@@ -1237,18 +1319,17 @@ class PongGame {
                 startScreenToggle.checked = this.soundEnabled;
             }
             
-            // Play a test sound if enabled
+            // Trigger a user interaction to unlock audio on iOS
             if (this.soundEnabled) {
-                // On iOS, unlock audio if needed when enabling sound
-                if (this.isIOS && !audioUnlocked) {
-                    this.debug("Attempting to unlock iOS audio from in-game toggle");
-                    unlockAudio();
-                }
-                
-                this.playInitialSound();
+                // Force unlock audio (iOS needs this from user interaction)
+                unlockAudio();
+                // Add slight delay before playing to let unlock take effect
+                setTimeout(() => {
+                    this.playInitialSound();
+                }, 100);
             }
             
-            this.debug("Sound " + (this.soundEnabled ? "enabled" : "disabled"));
+            return false; // Prevent any other handlers
         });
         
         // Assemble the elements
