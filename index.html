@@ -179,9 +179,8 @@
         }
         
         /* Accessibility focus styles */
-        *:focus {
-            outline: 3px solid #00c3ff;
-            outline-offset: 3px;
+        button:focus, a:focus {
+            outline: 2px solid #00c3ff;
         }
         
         /* Game controls info box */
@@ -196,29 +195,6 @@
             z-index: 25;
             color: rgba(255, 255, 255, 0.8);
         }
-        
-        #accessibilityPanel {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            z-index: 40;
-        }
-        
-        #accessibilityButton {
-            background-color: rgba(0, 0, 0, 0.6);
-            color: white;
-            border: 1px solid #00c3ff;
-            border-radius: 5px;
-            padding: 5px 10px;
-            cursor: pointer;
-            font-family: 'Orbitron', sans-serif;
-            outline: none;
-        }
-        
-        #accessibilityButton:hover, #accessibilityButton:focus {
-            background-color: rgba(0, 195, 255, 0.2);
-            box-shadow: 0 0 10px rgba(0, 195, 255, 0.5);
-        }
     </style>
     <!-- Google Fonts for a retro feel -->
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
@@ -226,10 +202,6 @@
 <body>
     <div id="info" aria-live="polite" aria-label="Score"></div>
     <div id="debug" aria-hidden="true"></div>
-    
-    <div id="accessibilityPanel">
-        <button id="accessibilityButton" aria-label="Accessibility Options">A11y</button>
-    </div>
     
     <!-- Add required Vibe Jam 2025 attribution link -->
     <a target="_blank" href="https://jam.pieter.com" style="font-family: 'system-ui', sans-serif; position: fixed; bottom: -1px; right: -1px; padding: 7px; font-size: 14px; font-weight: bold; background: #fff; color: #000; text-decoration: none; z-index: 10; border-top-left-radius: 12px; z-index: 10000; border: 1px solid #fff;">🕹️ Vibe Jam 2025</a>
