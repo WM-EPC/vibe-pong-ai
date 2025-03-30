@@ -10,6 +10,81 @@ let audioUnlocked = false;
 // Add an interval reference for continuous audio checking
 let audioContextCheckInterval = null;
 
+// Store decoded audio buffers for reuse
+let decodedBuffers = {
+    bounce: null,
+    wall: null,
+    score: null
+};
+
+// Base64-encoded audio data for sounds
+const soundData = {
+    bounce: "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQQAAAAAAA==",
+    wall: "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=",
+    score: "data:audio/wav;base64,UklGRioAAABXQVZFZm10IBAAAAABAAEARKwAAESsAAABAAgAZGF0YQAAAAA="
+};
+
+// Function to play a sound from a decoded buffer using Web Audio API
+function playSoundFromBuffer(soundType) {
+    if (!audioCtx || !audioUnlocked) return;
+    
+    try {
+        // Create a new audio source for this play
+        const source = audioCtx.createBufferSource();
+        
+        // If we have a decoded buffer, use it
+        if (decodedBuffers[soundType]) {
+            source.buffer = decodedBuffers[soundType];
+            source.connect(audioCtx.destination);
+            source.start(0);
+            return true;
+        }
+        
+        // If we don't have the buffer yet, try to decode it
+        if (soundData[soundType]) {
+            // Extract the base64 data from the data URL
+            let base64String = soundData[soundType].split(',')[1];
+            if (!base64String) {
+                console.error("Invalid sound data format for", soundType);
+                return false;
+            }
+            
+            // Convert base64 to array buffer
+            const binaryString = window.atob(base64String);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            
+            // Decode the audio data
+            audioCtx.decodeAudioData(
+                bytes.buffer,
+                (decodedBuffer) => {
+                    // Store the decoded buffer for future use
+                    decodedBuffers[soundType] = decodedBuffer;
+                    
+                    // Create and play the source
+                    const newSource = audioCtx.createBufferSource();
+                    newSource.buffer = decodedBuffer;
+                    newSource.connect(audioCtx.destination);
+                    newSource.start(0);
+                },
+                (error) => {
+                    console.error("Error decoding audio data for", soundType, error);
+                }
+            );
+            
+            return true;
+        }
+        
+        return false;
+    } catch (e) {
+        console.error("Error playing sound buffer:", e);
+        return false;
+    }
+}
+
 // Improved function to unlock audio on user interaction
 function unlockAudio() {
     if (audioUnlocked) return;
@@ -30,50 +105,41 @@ function unlockAudio() {
         // Play the empty buffer (required for iOS)
         source.start(0);
         
-        // Create multiple audio elements with different formats
-        // This multi-pronged approach has better success on iOS
-        const sounds = [];
-        
-        // Add silent MP3
-        const mp3Sound = new Audio("data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjMyLjEwNAAAAAAAAAAAAAAA//tQwAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAABAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV6urq6urq6urq6urq6urq6urq6urq6v////////////////////////////////8AAAAATGF2YzU4LjU0AAAAAAAAAAAAAAAAJAAAAAAAAAAAASDs90hvAAAA");
-        sounds.push(mp3Sound);
-        
-        // Add silent WAV
-        const wavSound = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA");
-        sounds.push(wavSound);
-        
-        // Force play all sounds
-        sounds.forEach(sound => {
-            // Use both play methods for maximum compatibility
+        // Pre-decode all sound buffers
+        for (const soundType in soundData) {
+            // We'll decode these in the background to have them ready
             try {
-                sound.play();
-            } catch(e) {}
-            
-            // Attach events to make sure playback happens
-            sound.addEventListener('play', () => {
-                setTimeout(() => {
-                    sound.pause();
-                    sound.currentTime = 0;
-                }, 1);
-            });
-            
-            // iOS sometimes requires a promise handler
-            const playPromise = sound.play();
-            if (playPromise !== undefined) {
-                playPromise.then(() => {
-                    // Playback started successfully
-                    sound.pause();
-                    sound.currentTime = 0;
-                }).catch(error => {
-                    // Auto-play was prevented - show UI to enable audio
-                    console.log("Audio play prevented: " + error);
-                });
+                // Extract the base64 data
+                let base64String = soundData[soundType].split(',')[1];
+                if (!base64String) continue;
+                
+                // Convert base64 to array buffer
+                const binaryString = window.atob(base64String);
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                
+                // Decode asynchronously
+                audioCtx.decodeAudioData(
+                    bytes.buffer,
+                    (decodedBuffer) => {
+                        decodedBuffers[soundType] = decodedBuffer;
+                        console.log(`Decoded buffer for ${soundType}`);
+                    },
+                    (error) => {
+                        console.error(`Error decoding ${soundType} buffer:`, error);
+                    }
+                );
+            } catch (e) {
+                console.error(`Error pre-decoding ${soundType}:`, e);
             }
-        });
+        }
         
         // Set audio as unlocked
         audioUnlocked = true;
-        console.log("Audio context and elements initialized - unlock attempt complete");
+        console.log("Audio context and buffers initialized - unlock attempt complete");
         
         // Start the interval to periodically check audio context state
         startAudioContextCheck();
@@ -89,17 +155,55 @@ function startAudioContextCheck() {
         clearInterval(audioContextCheckInterval);
     }
     
+    // Detect iOS for more aggressive checking
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    
     // Create a new interval that checks and resumes the audio context
     audioContextCheckInterval = setInterval(() => {
-        if (audioCtx && audioCtx.state === 'suspended') {
-            console.log("AudioContext suspended, attempting to resume");
-            audioCtx.resume().then(() => {
-                console.log("AudioContext resumed successfully");
-            }).catch(err => {
-                console.warn("Failed to resume AudioContext:", err);
-            });
+        if (audioCtx) {
+            // Check if context is suspended and try to resume it
+            if (audioCtx.state === 'suspended') {
+                console.log("AudioContext suspended, attempting to resume");
+                audioCtx.resume().then(() => {
+                    console.log("AudioContext resumed successfully");
+                    
+                    // On iOS, play a silent buffer to keep things active
+                    if (isIOS) {
+                        try {
+                            const silentBuffer = audioCtx.createBuffer(1, 1, 22050);
+                            const silentSource = audioCtx.createBufferSource();
+                            silentSource.buffer = silentBuffer;
+                            silentSource.connect(audioCtx.destination);
+                            silentSource.start(0);
+                        } catch (e) {
+                            // Ignore errors here
+                        }
+                    }
+                }).catch(err => {
+                    console.warn("Failed to resume AudioContext:", err);
+                });
+            }
+            
+            // Even when in running state, iOS might need periodic stimulation
+            if (isIOS && audioCtx.state === 'running' && Math.random() < 0.3) {
+                // Randomly (30% chance) play a silent buffer even when running
+                // This helps maintain iOS audio system activity
+                try {
+                    const silentBuffer = audioCtx.createBuffer(1, 1, 22050);
+                    const silentSource = audioCtx.createBufferSource();
+                    silentSource.buffer = silentBuffer;
+                    silentSource.connect(audioCtx.destination);
+                    silentSource.start(0);
+                } catch (e) {
+                    // Ignore errors here
+                }
+            }
+        } else if (!audioUnlocked) {
+            // If we don't have a context yet, try to create one
+            console.log("No AudioContext exists, attempting to create one");
+            unlockAudio();
         }
-    }, 1000); // Check every second
+    }, isIOS ? 500 : 1000); // Check more frequently on iOS
 }
 
 // Enhanced shutdown and cleanup for the interval
@@ -108,6 +212,28 @@ function cleanupAudioSystem() {
         clearInterval(audioContextCheckInterval);
         audioContextCheckInterval = null;
     }
+    
+    // Clean up audio context if it exists
+    if (audioCtx && typeof audioCtx.close === 'function') {
+        try {
+            audioCtx.close().then(() => {
+                console.log("AudioContext closed successfully");
+            }).catch(err => {
+                console.warn("Error closing AudioContext:", err);
+            });
+        } catch (e) {
+            console.warn("Error during AudioContext cleanup:", e);
+        }
+    }
+    
+    // Clear any decoded buffers
+    for (const key in decodedBuffers) {
+        decodedBuffers[key] = null;
+    }
+    
+    // Reset the unlocked state
+    audioUnlocked = false;
+    audioCtx = null;
 }
 
 // Add this to the window unload event
@@ -328,129 +454,90 @@ class PongGame {
                 unlockAudio();
             }
             
-            // Create a buffer of audio elements to prevent garbage collection
-            this.audioElements = {
-                bounce: [],
-                wall: [],
-                score: []
-            };
-            
-            // Pre-create some audio elements for each sound type
-            for (let i = 0; i < 5; i++) {
-                // We'll create dummy audio elements that will be used as templates
-                // This helps prevent garbage collection issues
-                const bounceEl = new Audio();
-                const wallEl = new Audio();
-                const scoreEl = new Audio();
-                
-                this.audioElements.bounce.push(bounceEl);
-                this.audioElements.wall.push(wallEl);
-                this.audioElements.score.push(scoreEl);
-            }
-            
-            // Enhanced sound functions with context checking
+            // Define sound playback functions that use our enhanced buffer-based system first,
+            // but fall back to script-based sounds if available
             this.playSoundFunction = {
                 bounce: () => {
                     this.ensureAudioContext();
+                    
+                    // Try to play using buffer first (most reliable)
+                    if (playSoundFromBuffer('bounce')) {
+                        return true;
+                    }
+                    
+                    // Fall back to script-based sound if available
                     if (window.createBounceSound) {
                         try {
                             window.createBounceSound();
+                            return true;
                         } catch (e) {
                             console.error("Bounce sound error:", e);
-                            this.playFallbackSound('bounce');
+                            return false;
                         }
-                    } else {
-                        this.playFallbackSound('bounce');
                     }
+                    
+                    return false;
                 },
                 wall: () => {
                     this.ensureAudioContext();
+                    
+                    // Try to play using buffer first (most reliable)
+                    if (playSoundFromBuffer('wall')) {
+                        return true;
+                    }
+                    
+                    // Fall back to script-based sound if available
                     if (window.createWallSound) {
                         try {
                             window.createWallSound();
+                            return true;
                         } catch (e) {
                             console.error("Wall sound error:", e);
-                            this.playFallbackSound('wall');
+                            return false;
                         }
-                    } else {
-                        this.playFallbackSound('wall');
                     }
+                    
+                    return false;
                 },
                 score: () => {
                     this.ensureAudioContext();
+                    
+                    // Try to play using buffer first (most reliable)
+                    if (playSoundFromBuffer('score')) {
+                        return true;
+                    }
+                    
+                    // Fall back to script-based sound if available
                     if (window.createScoreSound) {
                         try {
                             window.createScoreSound();
+                            return true;
                         } catch (e) {
                             console.error("Score sound error:", e);
-                            this.playFallbackSound('score');
+                            return false;
                         }
-                    } else {
-                        this.playFallbackSound('score');
                     }
+                    
+                    return false;
                 }
             };
             
-            // Check if any sound functions are available
-            const hasSoundFunctions = window.createBounceSound || 
-                                     window.createWallSound || 
-                                     window.createScoreSound;
+            // Check if sounds will be available
+            this.audioReady = audioUnlocked;
             
-            if (hasSoundFunctions) {
-                this.debug("Sound functions detected and ready to use");
-                this.audioReady = true;
-            } else {
-                this.debug("WARNING: No sound functions found");
-            }
-            
-            // Set up periodic check for this instance
+            // Set up periodic check to keep audio system alive
             this.setupPeriodicAudioCheck();
         } catch (error) {
             this.debug("WARNING: Could not initialize sounds: " + error.message);
         }
     }
     
-    // Create a fallback sound mechanism using HTML5 Audio
+    // Legacy method kept for compatibility - now uses our buffer-based system
     playFallbackSound(type) {
-        // Use one of our pre-created audio elements
-        if (this.audioElements && this.audioElements[type] && this.audioElements[type].length > 0) {
-            // Get the first available audio element
-            const audio = this.audioElements[type][0];
-            
-            // Set its source based on type (simple beeps with different tones)
-            if (type === 'bounce') {
-                audio.src = "data:audio/wav;base64,UklGRh4AAABXQVZFZm10IBAAAAABAAEARKwAAESsAAABAAgAZGF0YQAAAAA=";
-            } else if (type === 'wall') {
-                audio.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAESsAAABAAgAZGF0YQAAAAA=";
-            } else if (type === 'score') {
-                audio.src = "data:audio/wav;base64,UklGRioAAABXQVZFZm10IBAAAAABAAEARKwAAESsAAABAAgAZGF0YQAAAAA=";
-            }
-            
-            // Play the sound
-            audio.volume = 0.5;
-            
-            try {
-                // iOS requires user interaction for audio play
-                const playPromise = audio.play();
-                
-                if (playPromise !== undefined) {
-                    playPromise.then(() => {
-                        // Successfully played
-                        setTimeout(() => {
-                            audio.pause();
-                            audio.currentTime = 0;
-                            
-                            // Move this audio element to the end of the array for reuse
-                            this.audioElements[type].push(this.audioElements[type].shift());
-                        }, 300); // Give it time to play before recycling
-                    }).catch(err => {
-                        console.warn("Fallback audio play failed:", err);
-                    });
-                }
-            } catch(e) {
-                console.error("Error playing fallback sound:", e);
-            }
+        if (playSoundFromBuffer(type)) {
+            return true;
         }
+        return false;
     }
     
     // Ensure the audio context is active before playing sounds
@@ -458,6 +545,7 @@ class PongGame {
         // If we don't have a context or it's suspended, retry unlocking
         if (!audioCtx || audioCtx.state === 'suspended') {
             unlockAudio();
+            return false;
         } else if (audioCtx.state === 'running') {
             // All good, context is running
             return true;
@@ -474,23 +562,17 @@ class PongGame {
                 // Ensure audio context is active
                 this.ensureAudioContext();
                 
-                // On iOS, we'll periodically make a silent sound to keep the audio system active
-                if (this.isIOS) {
-                    // Try a silent sound every 20 seconds to keep the audio system alive
-                    // This has been shown to help on iOS
-                    const silentContext = new (window.AudioContext || window.webkitAudioContext)();
-                    const silentBuffer = silentContext.createBuffer(1, 1, 22050);
-                    const silentSource = silentContext.createBufferSource();
+                // On iOS, we'll create a silent buffer sound every 20 seconds
+                // to keep the audio system alive
+                if (this.isIOS && audioCtx && audioCtx.state === 'running') {
+                    // Create a silent buffer and play it
+                    const silentBuffer = audioCtx.createBuffer(1, 1, 22050);
+                    const silentSource = audioCtx.createBufferSource();
                     silentSource.buffer = silentBuffer;
-                    silentSource.connect(silentContext.destination);
+                    silentSource.connect(audioCtx.destination);
                     
                     try {
                         silentSource.start(0);
-                        setTimeout(() => {
-                            if (silentContext && silentContext.close) {
-                                silentContext.close();
-                            }
-                        }, 1000);
                     } catch(e) {
                         console.warn("Silent sound failed:", e);
                     }
@@ -516,26 +598,16 @@ class PongGame {
         // Always ensure audio context is ready
         this.ensureAudioContext();
         
-        // Try to play the sound with retries on iOS
+        // First, try to play directly from buffer (most reliable, especially on iOS)
+        if (playSoundFromBuffer(soundType)) {
+            return;
+        }
+        
+        // If buffer playback failed, try the sound function
         try {
             const soundFunc = this.playSoundFunction[soundType];
             if (soundFunc) {
-                // iOS requires special handling for reliable playback
-                if (this.isIOS) {
-                    // First attempt
-                    soundFunc();
-                    
-                    // On iOS, sometimes we need a second attempt shortly after
-                    // This improves reliability significantly
-                    setTimeout(() => {
-                        if (audioCtx && audioCtx.state === 'running' && this.soundEnabled) {
-                            soundFunc();
-                        }
-                    }, 10);
-                } else {
-                    // For non-iOS, a single attempt is usually enough
-                    soundFunc();
-                }
+                soundFunc();
             }
         } catch (error) {
             console.error("Sound playback error:", error);
@@ -551,13 +623,17 @@ class PongGame {
         
         // Just try the bounce sound
         if (this.soundEnabled) {
-            // For iOS, we need to use a timeout to improve reliability
+            // For iOS, we need to use a timeout to allow the audio context to stabilize
             if (this.isIOS) {
-                // Use multiple attempts with increasing delays
-                setTimeout(() => this.playSound('bounce'), 0);
-                setTimeout(() => this.playSound('bounce'), 100);
-                setTimeout(() => this.playSound('bounce'), 500);
+                setTimeout(() => {
+                    // Try buffer-based playback first (most reliable on iOS)
+                    if (!playSoundFromBuffer('bounce')) {
+                        // Fall back to regular playSound if buffer playback fails
+                        this.playSound('bounce');
+                    }
+                }, 100);
             } else {
+                // On desktop, just play the sound directly
                 this.playSound('bounce');
             }
         }
@@ -1588,13 +1664,63 @@ class PongGame {
         if (document.visibilityState === 'visible') {
             // Page became visible again, ensure audio works
             this.debug("Page visible, resuming audio");
-            this.ensureAudioContext();
             
-            // Force a test sound after a slight delay
-            if (this.soundEnabled && this.isIOS) {
+            // For iOS, we need special handling when the tab becomes visible again
+            if (this.isIOS) {
+                // Give iOS a moment to stabilize
                 setTimeout(() => {
-                    this.playInitialSound();
+                    // First ensure the audio context is running
+                    this.ensureAudioContext();
+                    
+                    // Force audio unlock again
+                    if (audioCtx && audioCtx.state === 'suspended') {
+                        audioCtx.resume().then(() => {
+                            this.debug("Audio context resumed after visibility change");
+                            
+                            // Play a silent buffer to reactivate audio
+                            try {
+                                const silentBuffer = audioCtx.createBuffer(1, 1, 22050);
+                                const silentSource = audioCtx.createBufferSource();
+                                silentSource.buffer = silentBuffer;
+                                silentSource.connect(audioCtx.destination);
+                                silentSource.start(0);
+                                
+                                // After this, try playing a test sound
+                                setTimeout(() => {
+                                    if (this.soundEnabled) {
+                                        // Try buffer-based playback first
+                                        playSoundFromBuffer('bounce');
+                                    }
+                                }, 100);
+                            } catch (e) {
+                                this.debug("Error playing silent buffer after visibility change: " + e);
+                            }
+                        }).catch(e => {
+                            this.debug("Error resuming AudioContext after visibility change: " + e);
+                        });
+                    } else {
+                        // Context is already running, just try to play a silent buffer
+                        try {
+                            if (audioCtx) {
+                                const silentBuffer = audioCtx.createBuffer(1, 1, 22050);
+                                const silentSource = audioCtx.createBufferSource();
+                                silentSource.buffer = silentBuffer;
+                                silentSource.connect(audioCtx.destination);
+                                silentSource.start(0);
+                            }
+                        } catch (e) {
+                            this.debug("Error playing silent buffer: " + e);
+                        }
+                    }
                 }, 300);
+            } else {
+                // Non-iOS just needs a context check
+                this.ensureAudioContext();
+                
+                // Maybe play a test sound if enabled
+                if (this.soundEnabled && Math.random() < 0.2) {
+                    this.playInitialSound(); // 20% chance to play sound on visibility change
+                }
             }
         } else {
             // Page hidden, log for debugging
@@ -1618,19 +1744,10 @@ class PongGame {
             this.audioCheckInterval = null;
         }
         
-        // Clean up audio elements
-        if (this.audioElements) {
-            for (const type in this.audioElements) {
-                if (this.audioElements[type]) {
-                    this.audioElements[type].forEach(audio => {
-                        audio.src = '';
-                        audio.load();
-                    });
-                    this.audioElements[type] = [];
-                }
-            }
-        }
-        
+        // Clean up audio-related resources
+        this.soundEnabled = false;
+        this.audioReady = false;
+
         // Remove DOM elements we created
         const elementsToRemove = [
             document.getElementById('inGameSoundToggleContainer'),
