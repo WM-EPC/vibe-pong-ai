@@ -1,0 +1,84 @@
+/**
+ * Vibe Pong - Game Configuration
+ * Centralizes all game constants and configuration parameters
+ */
+
+import * as THREE from 'three';
+
+// Game field dimensions and boundaries
+export const FIELD = {
+    WIDTH: 20,
+    HEIGHT: 12,
+    DEPTH: 1
+};
+
+// Paddle configuration
+export const PADDLE = {
+    WIDTH: 0.3,
+    HEIGHT: 2,
+    DEPTH: 0.3,
+    SPEED: 0.15
+};
+
+// Ball configuration
+export const BALL = {
+    RADIUS: 0.5,
+    INITIAL_SPEED: 0.12,
+    MAX_TRAIL_LENGTH: 15,
+    TRAIL_OPACITY_STEP: 0.07
+};
+
+// Game colors
+export const COLORS = {
+    NEON_PINK: new THREE.Color(1, 0.08, 0.58),
+    NEON_BLUE: new THREE.Color(0, 0.76, 1),
+    NEON_YELLOW: new THREE.Color(1, 0.92, 0),
+    BACKGROUND: new THREE.Color(0.01, 0.01, 0.03),
+    GRID: new THREE.Color(0.2, 0.2, 0.6)
+};
+
+// View modes
+export const VIEW_MODES = {
+    THIRD_PERSON: 'THIRD_PERSON',
+    FIRST_PERSON: 'FIRST_PERSON'
+};
+
+// Audio configuration
+export const AUDIO = {
+    ENABLED_BY_DEFAULT: true,
+    // Base64-encoded audio data for sounds
+    SOUND_DATA: {
+        // Short ping sound for bounce - cleaner version
+        BOUNCE: "data:audio/wav;base64,UklGRsgBAABXQVZFZm10IBAAAAABAAEARKwAAESsAAABAAgAZGF0YaQBAACAgICAgICAgICAgIB4eIB/f3+AgYGBgYGBgICAgICAgHZ2gICAgH9/f39+foCAgICAgICAgICAgICAfX2AgICAgH9/f39/f4CAgICAgICAd3eAgH9/f39/f4CAgICAgICAgICAgICAeXl/f4GBf39/f4CAgICAgICAgHx8f39/f39/f4GBgICAgICA//+AgH19gICAgH9/f39/f4CAgICAgICAgICAgICAeHiAf39/gIGBgYGBgYCAgICAgHZ2gICAgH9/f39+foCAgICAgICAgICAgICAeHiAgICAgH9/f39/f4CAgICAgICAeHiAgH9/f39/f4CAgICAgICAgICAgICAenp/f4CAf39/f4CAgICAgICAgHt7f39/f39/f4CAgICAgICAeHj//4CAfX2AgICAgICAgICAgICAgICAgICAgICAgICAfn6AgICAgICAf39/f39/f3+AgICAgIB/f4CAf39/f4CAgICAgICAgIB9fYCAgIB/f39/f3+AgICAgICAAABAQJE5NCoAAAATSURBVFNwEEFQA0YySEsADwxBBAkiG0ZwZQ==",
+        // Complementary mid-range sound for wall hit
+        WALL: "data:audio/wav;base64,UklGRqgBAABXQVZFZm10IBAAAAABAAEARKwAAESsAAABAAgAZGF0YYQBAACBgYGBgYGBgYGAf3t9fYCAgICAgICAgYGBgYCAfX19fYCAgICAgICAgYGBgX9+fn5+gICAgICAgICAgICAfn5+foCAgICAgICAgICAf39/f3+AgICAgICAgICAf4CAgICAgICAgH99fX19gICAgICAgICBgYGBgIB9fX19gICAgICAgICBgYGBf35+fn6AgICAgICAgICAgIB+fn5+gICAgICAgICAgIB/f39/f4CAgICAgICAgICAgICAgICAgIB/fX19fYCAgICAgICAgYGBgYCAe35+gICAgICAgICAgYGBgX9+fn5+gICAgICAgICAgICAf39/f3+AgICAgICAgICAgH9/f39/gICAgICAgICAgIB/f39/f4CAgICAgICAgICAf35/gICAAABAQEE5NCoAAAATSURBVAsCAxgABggHEAgBBwkFCQYAYk79",
+        // Distinctive victory sound for scoring
+        SCORE: "data:audio/wav;base64,UklGRiwDAABXQVZFZm10IBAAAAABAAEARKwAAESsAAABAAgAZGF0YQgDAACBgYGBgYGCgoKCgoKCgoKCg4ODgoKCgYGBgYGBgYGBgYCBgYCAgICAgICAgICAgICAgICBgYGBgYGBgYGBgYGBgYGBgYGBgoKCgoKDg4ODgoKCgoKCgYGBgICAgICAgH9/gICAf39/f39/f39/f39/f3+AgICAgICAgICAgICAgICAgICAgIGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYCAgICAgICAgICAgICAfn5+fn5+fn5+fn5+fn5+fn5+f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f3+AgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGBgYGBgYGBgYGBgYGBgYGBgYCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgIGBgICAf39/f39/f39/f39/f39/f4CAgICAgICAgICAgICAgICAgIGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYCAgICAgICAgICAgIGBgYGBgYGBgYGBgIGBgICAgICAgICAgICAf39/f39/f39/f39/f39/f39/f39/f39/f4CAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGAAAC/4QzH6SIAAAAASUVORK5CYII="
+    }
+};
+
+// Game state configuration
+export const GAME_STATES = {
+    MENU: 'MENU',
+    PLAYING: 'PLAYING',
+    PAUSED: 'PAUSED',
+    GAME_OVER: 'GAME_OVER'
+};
+
+// Scoring configuration
+export const SCORING = {
+    POINTS_TO_WIN: 11,
+    MINIMUM_SCORE_FOR_PORTAL: 50
+};
+
+// Version information
+export const VERSION = {
+    CURRENT: 'v0.1.6ai',
+    DESCRIPTION: 'AI-assisted improvement version'
+};
+
+// Debug configuration
+export const DEBUG = {
+    ENABLED: false,
+    SHOW_FPS: false
+}; 

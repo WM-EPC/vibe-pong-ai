@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Vibe Pong - Audio Test v0.1.6ai</title>
+
+    <!-- Import map for Three.js -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.161.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.161.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+            background-color: #0a0a0f;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        
+        h1 {
+            font-size: 32px;
+            margin-bottom: 20px;
+            color: #00c3ff;
+            text-shadow: 0 0 10px rgba(0, 195, 255, 0.5);
+        }
+        
+        .description {
+            max-width: 600px;
+            text-align: center;
+            margin-bottom: 40px;
+            line-height: 1.5;
+        }
+        
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            margin: 10px;
+            background-color: #00c3ff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .button:hover {
+            background-color: #00a0ff;
+            transform: scale(1.05);
+        }
+        
+        .version {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <h1>Vibe Pong - Audio System Test</h1>
+    
+    <div class="description">
+        This page tests the new AudioManager implementation with a simplified UI.
+        Click the button below to load the test interface.
+    </div>
+    
+    <button id="start-test" class="button">Start Audio Test</button>
+    
+    <div class="version">v0.1.6ai</div>
+
+    <script>
+        document.getElementById('start-test').addEventListener('click', function() {
+            // Create and add script
+            const script = document.createElement('script');
+            script.id = 'audio-test-script';
+            script.type = 'module';
+            script.src = './js/test-audio.js';
+            document.body.appendChild(script);
+            
+            // Hide the start button
+            this.style.display = 'none';
+        });
+    </script>
+</body>
+</html> 
