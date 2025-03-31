@@ -7,8 +7,9 @@
 ### Changes in v0.1.6ai:
 - Added central config.js file to organize all game constants and settings
 - Created modular AudioManager class for improved audio handling
-- Included test files for verifying audio functionality
-- Simplified audio implementation for better cross-platform support
+- Replaced placeholder sounds with higher quality game-appropriate sounds
+- Created attractive test interface for verifying audio functionality
+- Improved cross-platform audio support, especially for iOS devices
 
 ## Previous Versions
 - v0.1.6t: Stable production version with working visuals and basic gameplay
