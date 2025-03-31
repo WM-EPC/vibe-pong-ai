@@ -92,6 +92,8 @@
             transition: all 0.3s ease;
             box-shadow: 0 0 10px #00c3ff;
             text-shadow: 0 0 5px #00c3ff;
+            position: relative;
+            z-index: 35;
         }
         
         #startButton:hover {
@@ -174,6 +176,16 @@
             z-index: 25;
             color: rgba(255, 255, 255, 0.8);
         }
+        
+        /* Make sure link is properly styled for visibility */
+        .audio-test-link {
+            margin-top: 20px;
+            color: #00c3ff;
+            text-decoration: none;
+            font-size: 1rem;
+            position: relative;
+            z-index: 35;
+        }
     </style>
     <!-- Google Fonts for a retro feel -->
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
@@ -186,7 +198,7 @@
     
     <div id="startScreen">
         <h1 class="game-title">VIBE PONG</h1>
-        <button id="startButton">PLAY</button>
+        <button id="startButton" onclick="if(window.game) { window.game.startGame(); }" ontouchend="if(window.game) { window.game.startGame(); event.preventDefault(); }">PLAY</button>
         <a href="/simple-audio.html" class="audio-test-link">TEST AUDIO</a>
         <div id="controls">
             <div class="desktop-instructions">

@@ -326,13 +326,25 @@ class PongGame {
             
             this.debug("Initializing game...");
             
-            // Add event listener to start button
+            // Add event listener to start button with improved debugging
             const startButton = document.getElementById('startButton');
             if (startButton) {
-                startButton.addEventListener('click', () => {
+                console.log("Found start button, adding click listener");
+                startButton.addEventListener('click', (e) => {
+                    console.log("Start button clicked");
+                    e.preventDefault();
                     this.debug("Play button clicked");
                     this.startGame();
                 });
+                
+                // Also add touch event for mobile
+                startButton.addEventListener('touchend', (e) => {
+                    console.log("Start button touched");
+                    e.preventDefault();
+                    this.startGame();
+                }, false);
+            } else {
+                console.error("Start button not found in DOM");
             }
             
             // Initialize sound state (using the new approach)
@@ -976,49 +988,64 @@ class PongGame {
     
     // Start the game
     startGame() {
+        console.log("startGame method called");
         this.debug("Starting game");
         
-        // Check if all required objects exist
-        if (!this.scene || !this.camera || !this.renderer) {
-            this.debug("ERROR: Core Three.js objects missing, reinitializing");
-            this.init();
-            return;
-        }
-        
-        if (!this.objects.ball) {
-            this.debug("Ball missing, creating a new one");
-            this.createBall();
-        }
-        
-        if (!this.objects.playerPaddle || !this.objects.aiPaddle) {
-            this.debug("Paddles missing, creating new ones");
-            this.createPaddles();
-        }
-        
-        this.gameStarted = true;
-        this.gamePaused = false;
-        this.resetBall();
-        this.score.player = 0;
-        this.score.ai = 0;
-        this.updateScoreDisplay();
-        
-        // Hide start screen
-        if (this.elements.startScreen) {
-            this.elements.startScreen.style.display = 'none';
-        }
-
-        // Create in-game sound toggle
-        this.createInGameSoundToggle();
-
-        // Initialize game sounds
-        if (this.soundEnabled) {
-            // On iOS, unlock audio if needed when enabling sound
-            if (this.isIOS && !audioUnlocked) {
-                this.debug("Attempting to unlock iOS audio from in-game toggle");
-                unlockAudio();
+        try {
+            // Check if all required objects exist
+            if (!this.scene || !this.camera || !this.renderer) {
+                console.error("Core Three.js objects missing, reinitializing");
+                this.debug("ERROR: Core Three.js objects missing, reinitializing");
+                this.init();
+                return;
             }
             
-            this.playInitialSound();
+            if (!this.objects.ball) {
+                console.log("Ball missing, creating a new one");
+                this.debug("Ball missing, creating a new one");
+                this.createBall();
+            }
+            
+            if (!this.objects.playerPaddle || !this.objects.aiPaddle) {
+                console.log("Paddles missing, creating new ones");
+                this.debug("Paddles missing, creating new ones");
+                this.createPaddles();
+            }
+            
+            // Set game state
+            this.gameStarted = true;
+            this.gamePaused = false;
+            
+            // Reset game elements
+            this.resetBall();
+            this.score.player = 0;
+            this.score.ai = 0;
+            this.updateScoreDisplay();
+            
+            // Hide start screen - ensure this happens regardless of other issues
+            if (this.elements.startScreen) {
+                console.log("Hiding start screen");
+                this.elements.startScreen.style.display = 'none';
+            } else {
+                console.error("Start screen element not found");
+            }
+            
+            // Create in-game sound toggle
+            this.createInGameSoundToggle();
+            
+            // Initialize game sounds
+            audioSystem.init();
+            if (this.soundEnabled) {
+                // Play a sound after a slight delay to ensure audio context is ready
+                setTimeout(() => {
+                    audioSystem.playSound('bounce');
+                }, 200);
+            }
+            
+            console.log("Game started successfully");
+        } catch (error) {
+            console.error("Error in startGame:", error);
+            this.debug("ERROR in startGame: " + error.message);
         }
     }
     
