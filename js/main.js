@@ -1259,11 +1259,12 @@ class PongGame {
             this.debug(`AI scores! Score: ${this.score.player}-${this.score.ai}`);
             this.updateScoreDisplay();
             
-            // Play failure sound when AI scores (player fails)
-            if (window.createFailureSound) {
-                window.createFailureSound();
+            // Play score sound directly using audioSystem when AI scores
+            // This ensures iOS compatibility by using our reliable audio system
+            if (window.audioSystem) {
+                audioSystem.playSound('score');
             } else {
-                // Fall back to regular score sound if failure sound isn't available
+                // Fall back to the old method if needed
                 this.playSound('score');
             }
             
@@ -1277,7 +1278,12 @@ class PongGame {
                 
                 // Play serve sound
                 setTimeout(() => {
-                    this.playSound('bounce');
+                    // Use audioSystem for the bounce sound too
+                    if (window.audioSystem) {
+                        audioSystem.playSound('bounce');
+                    } else {
+                        this.playSound('bounce');
+                    }
                     // Reset cooldown after serve
                     this.scoringCooldown = false;
                 }, 100);
@@ -1295,7 +1301,12 @@ class PongGame {
             this.updateScoreDisplay();
             
             // Play victory sound when player scores
-            this.playSound('score');
+            // Use audioSystem directly for better iOS compatibility
+            if (window.audioSystem) {
+                audioSystem.playSound('score');
+            } else {
+                this.playSound('score');
+            }
             
             // Hide the ball immediately
             this.objects.ball.visible = false;
@@ -1307,7 +1318,12 @@ class PongGame {
                 
                 // Play serve sound
                 setTimeout(() => {
-                    this.playSound('bounce');
+                    // Use audioSystem for the bounce sound too
+                    if (window.audioSystem) {
+                        audioSystem.playSound('bounce');
+                    } else {
+                        this.playSound('bounce');
+                    }
                     // Reset cooldown after serve
                     this.scoringCooldown = false;
                 }, 100);

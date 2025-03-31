@@ -10,56 +10,53 @@
     <script type="importmap">
     {
         "imports": {
-            "three": "https://unpkg.com/three@0.161.0/build/three.module.js",
-            "three/addons/": "https://unpkg.com/three@0.161.0/examples/jsm/"
+            "three": "https://unpkg.com/three@0.151.3/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.151.3/examples/jsm/"
         }
     }
     </script>
     
     <style>
-        body {
+        * {
             margin: 0;
-            overflow: hidden;
-            font-family: 'Arial', sans-serif;
-            background-color: #0a0a0f;
-            color: white;
-            touch-action: none; /* Prevent default touch actions for better game control */
+            padding: 0;
+            box-sizing: border-box;
         }
+        
+        body {
+            font-family: 'Orbitron', sans-serif;
+            background-color: #000;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+            user-select: none;
+            touch-action: none;
+        }
+        
         canvas {
             display: block;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            z-index: 10;
         }
+        
         #info {
             position: absolute;
-            top: 10px;
-            width: 100%;
-            text-align: center;
-            color: white;
-            font-size: 40px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 5rem;
             font-weight: bold;
-            text-shadow: 0 0 20px #00aaff, 0 0 30px #0088ff;
-            pointer-events: none;
             z-index: 20;
-            font-family: 'Orbitron', sans-serif;
-        }
-        #debug {
-            position: absolute;
-            bottom: 10px;
-            left: 10px;
             color: rgba(255, 255, 255, 0.8);
-            font-size: 14px;
-            font-family: monospace;
-            z-index: 20;
-            white-space: pre;
-            line-height: 1.4;
-            background-color: rgba(0, 0, 0, 0.5);
-            padding: 10px;
-            border-radius: 5px;
-            max-width: 90%;
-            display: none; /* Hide by default */
+            text-shadow: 0 0 10px #00c3ff, 0 0 20px #00c3ff;
+            pointer-events: none;
         }
-        #debug.visible {
-            display: block;
-        }
+        
         #startScreen {
             position: absolute;
             top: 0;
@@ -70,94 +67,76 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            background: linear-gradient(to bottom, rgba(10, 10, 15, 0.8), rgba(20, 10, 40, 0.9));
+            background-color: rgba(0, 0, 0, 0.9);
             z-index: 30;
         }
-        #title {
-            font-size: 72px;
-            margin-bottom: 30px;
-            color: #ffea00;
-            text-shadow: 0 0 20px rgba(255, 234, 0, 0.7), 0 0 40px rgba(255, 200, 0, 0.4);
-            font-family: 'Orbitron', sans-serif;
-            animation: glow 2s infinite alternate;
+        
+        .game-title {
+            font-size: 4rem;
+            margin-bottom: 2rem;
+            color: #fff;
+            text-shadow: 0 0 10px #00c3ff, 0 0 20px #00c3ff;
         }
-        @keyframes glow {
-            from {
-                text-shadow: 0 0 20px rgba(255, 234, 0, 0.7), 0 0 40px rgba(255, 200, 0, 0.4);
-            }
-            to {
-                text-shadow: 0 0 30px rgba(255, 234, 0, 0.9), 0 0 50px rgba(255, 200, 0, 0.7);
-            }
-        }
+        
         #startButton {
-            padding: 15px 40px;
-            font-size: 24px;
-            background-color: transparent;
-            color: white;
-            border: 2px solid #00c3ff;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 0 15px rgba(0, 195, 255, 0.5);
             font-family: 'Orbitron', sans-serif;
-        }
-        #startButton:hover, #startButton:focus {
-            background-color: rgba(0, 195, 255, 0.2);
-            box-shadow: 0 0 20px rgba(0, 195, 255, 0.8), 0 0 40px rgba(0, 150, 255, 0.4);
-            transform: scale(1.05);
-            outline: none;
-        }
-        #controls {
-            margin-top: 30px;
-            font-size: 18px;
-            color: rgba(255, 255, 255, 0.7);
-            text-align: center;
-            line-height: 1.6;
-        }
-        .sound-toggle {
-            margin-top: 20px;
-            display: flex;
-            align-items: center;
-            cursor: pointer;
-            padding: 8px 15px;
-            background-color: rgba(0, 0, 0, 0.6);
-            border-radius: 8px;
-            border: 1px solid #00c3ff;
-            -webkit-tap-highlight-color: transparent; /* Remove tap highlight on iOS */
-            user-select: none; /* Prevent selection */
-        }
-        #soundToggleButton {
-            display: flex;
-            align-items: center;
-            background: none;
-            border: none;
-            color: white;
+            font-size: 1.5rem;
             font-weight: bold;
-            font-family: 'Orbitron', sans-serif;
+            padding: 15px 40px;
+            background-color: transparent;
+            color: #fff;
+            border: 2px solid #00c3ff;
+            border-radius: 30px;
             cursor: pointer;
-            padding: 0;
-            font-size: 14px;
-            -webkit-tap-highlight-color: transparent;
+            outline: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px #00c3ff;
+            text-shadow: 0 0 5px #00c3ff;
         }
-        .sound-indicator {
-            display: inline-block;
-            width: 14px;
-            height: 14px;
-            border-radius: 50%;
-            margin-left: 10px;
-            background-color: #00c3ff;
-            box-shadow: 0 0 5px #00c3ff;
-            transition: background-color 0.2s, box-shadow 0.2s;
+        
+        #startButton:hover {
+            background-color: rgba(0, 195, 255, 0.2);
+            box-shadow: 0 0 20px #00c3ff;
         }
-        .sound-indicator.off {
-            background-color: #666;
-            box-shadow: none;
-        }
-        .sound-toggle input, .toggle-slider {
+        
+        #pauseOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 40;
+            color: #fff;
+            font-size: 3rem;
+            text-shadow: 0 0 10px #00c3ff, 0 0 20px #00c3ff;
         }
-        .setting-label {
-            margin-right: 5px;
+        
+        #debug {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            font-size: 0.8rem;
+            font-family: monospace;
+            z-index: 50;
+            color: rgba(255, 255, 255, 0.5);
+            pointer-events: none;
+            max-width: 50%;
+            overflow: hidden;
+        }
+        
+        .controls-info {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.6);
+            text-align: right;
+            z-index: 20;
         }
         
         /* Mobile instructions */
@@ -173,7 +152,7 @@
             .desktop-instructions {
                 display: none;
             }
-            #title {
+            .game-title {
                 font-size: 50px;
             }
         }
@@ -200,15 +179,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div id="info" aria-live="polite" aria-label="Score"></div>
-    <div id="debug" aria-hidden="true"></div>
+    <div id="info">0 : 0</div>
     
     <!-- Add required Vibe Jam 2025 attribution link -->
     <a target="_blank" href="https://jam.pieter.com" style="font-family: 'system-ui', sans-serif; position: fixed; bottom: -1px; right: -1px; padding: 7px; font-size: 14px; font-weight: bold; background: #fff; color: #000; text-decoration: none; z-index: 10; border-top-left-radius: 12px; z-index: 10000; border: 1px solid #fff;">🕹️ Vibe Jam 2025</a>
     
-    <div id="startScreen" role="dialog" aria-labelledby="title">
-        <div id="title">VIBE PONG</div>
-        <button id="startButton" aria-label="Start game">PLAY</button>
+    <div id="startScreen">
+        <h1 class="game-title">VIBE PONG</h1>
+        <button id="startButton">PLAY</button>
         <a href="/simple-audio.html" class="audio-test-link">TEST AUDIO</a>
         <div id="controls">
             <div class="desktop-instructions">
@@ -229,6 +207,16 @@
                 <span class="sound-indicator" id="soundIndicator"></span>
             </button>
         </div>
+    </div>
+    
+    <div id="pauseOverlay">PAUSED</div>
+    
+    <div id="debug"></div>
+    
+    <div class="controls-info">
+        Controls:<br>
+        Move: W/S, ↑/↓, swipe<br>
+        Pause: P
     </div>
     
     <div id="gameControls" aria-label="Game controls" role="complementary">
