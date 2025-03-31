@@ -1665,14 +1665,22 @@ class PongGame {
     }
 }
 
-// Wait for document to be fully loaded before initializing
-window.onload = function() {
-    const game = new PongGame();
-    game.init();
-    
-    // Set up unload handler to clean up resources
-    window.addEventListener('beforeunload', () => {
-        game.destroy();
-        cleanupAudioSystem();
-    });
-};
+// Initialize game on document load
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM Content Loaded - initializing game');
+    try {
+        // Create and initialize game
+        window.game = new PongGame();
+        window.game.init();
+        
+        // Check if the game should be started immediately (button clicked before initialization)
+        if (window.shouldStartGameWhenReady) {
+            console.log('Found shouldStartGameWhenReady flag, starting game immediately');
+            window.game.startGame();
+        }
+        
+        console.log('Game initialization complete');
+    } catch (e) {
+        console.error('Error initializing game:', e);
+    }
+});

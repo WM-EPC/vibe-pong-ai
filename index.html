@@ -6,14 +6,14 @@
     <meta name="description" content="Vibe Pong - A retro-style neon pong game with modern visuals">
     <title>Vibe Pong</title>
     
-    <!-- Import map for Three.js -->
+    <!-- Improved importmap for Three.js -->
     <script type="importmap">
-    {
-        "imports": {
-            "three": "https://unpkg.com/three@0.151.3/build/three.module.js",
-            "three/addons/": "https://unpkg.com/three@0.151.3/examples/jsm/"
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.151.3/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.151.3/examples/jsm/"
+            }
         }
-    }
     </script>
     
     <style>
@@ -78,14 +78,21 @@
             text-shadow: 0 0 10px #00c3ff, 0 0 20px #00c3ff;
         }
         
+        /* Enhanced play button with better tap target and styling */
+        #startButtonContainer {
+            position: relative;
+            margin: 20px 0;
+            z-index: 35;
+        }
+        
         #startButton {
             font-family: 'Orbitron', sans-serif;
             font-size: 1.5rem;
             font-weight: bold;
-            padding: 15px 40px;
-            background-color: transparent;
+            padding: 20px 50px;
+            background-color: rgba(0, 100, 200, 0.3);
             color: #fff;
-            border: 2px solid #00c3ff;
+            border: 3px solid #00c3ff;
             border-radius: 30px;
             cursor: pointer;
             outline: none;
@@ -94,11 +101,37 @@
             text-shadow: 0 0 5px #00c3ff;
             position: relative;
             z-index: 35;
+            min-width: 200px;
+            min-height: 80px;
+            -webkit-tap-highlight-color: rgba(0,0,0,0);
         }
         
-        #startButton:hover {
-            background-color: rgba(0, 195, 255, 0.2);
+        #startButton:hover, #startButton:active {
+            background-color: rgba(0, 195, 255, 0.4);
             box-shadow: 0 0 20px #00c3ff;
+            transform: scale(1.05);
+        }
+        
+        /* Make sure link is properly styled for visibility */
+        .audio-test-link {
+            margin-top: 20px;
+            color: #00c3ff;
+            text-decoration: none;
+            font-size: 1rem;
+            position: relative;
+            z-index: 35;
+        }
+        
+        /* Compatibility issues indicator */
+        #compatibility-warning {
+            position: fixed;
+            top: 10px;
+            width: 100%;
+            color: #ff5252;
+            text-align: center;
+            font-size: 14px;
+            display: none;
+            z-index: 100;
         }
         
         #pauseOverlay {
@@ -176,16 +209,6 @@
             z-index: 25;
             color: rgba(255, 255, 255, 0.8);
         }
-        
-        /* Make sure link is properly styled for visibility */
-        .audio-test-link {
-            margin-top: 20px;
-            color: #00c3ff;
-            text-decoration: none;
-            font-size: 1rem;
-            position: relative;
-            z-index: 35;
-        }
     </style>
     <!-- Google Fonts for a retro feel -->
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
@@ -193,13 +216,24 @@
 <body>
     <div id="info">0 : 0</div>
     
+    <!-- Compatibility issues warning -->
+    <div id="compatibility-warning">
+        Compatibility issue detected. Please try reloading the page.
+    </div>
+    
     <!-- Add required Vibe Jam 2025 attribution link -->
     <a target="_blank" href="https://jam.pieter.com" style="font-family: 'system-ui', sans-serif; position: fixed; bottom: -1px; right: -1px; padding: 7px; font-size: 14px; font-weight: bold; background: #fff; color: #000; text-decoration: none; z-index: 10; border-top-left-radius: 12px; z-index: 10000; border: 1px solid #fff;">🕹️ Vibe Jam 2025</a>
     
     <div id="startScreen">
         <h1 class="game-title">VIBE PONG</h1>
-        <button id="startButton" onclick="if(window.game) { window.game.startGame(); }" ontouchend="if(window.game) { window.game.startGame(); event.preventDefault(); }">PLAY</button>
-        <a href="/simple-audio.html" class="audio-test-link">TEST AUDIO</a>
+        
+        <!-- Enhanced button container with better event handling -->
+        <div id="startButtonContainer">
+            <button id="startButton">PLAY</button>
+        </div>
+        
+        <a href="/button-test.html" class="audio-test-link">BUTTON TEST</a>
+        <a href="/simple-audio.html" class="audio-test-link">AUDIO TEST</a>
         <div id="controls">
             <div class="desktop-instructions">
                 Controls:<br>
@@ -317,5 +351,89 @@
     
     <!-- Version number display -->
     <div id="versionInfo" style="position: absolute; bottom: 10px; left: 10px; font-size: 12px; color: rgba(255, 255, 255, 0.5); z-index: 100; font-family: monospace; pointer-events: none;">v0.1.6ai</div>
+
+    <!-- Standalone button handler script that doesn't rely on game initialization -->
+    <script type="text/javascript">
+        // Immediate button handler that doesn't wait for anything
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("DOM fully loaded, setting up button handlers");
+            
+            const startButton = document.getElementById('startButton');
+            const startScreen = document.getElementById('startScreen');
+            
+            // Check if button exists
+            if (!startButton) {
+                console.error("Start button not found in DOM!");
+                document.getElementById('compatibility-warning').style.display = 'block';
+                return;
+            }
+            
+            // Function to start the game independently of the game class
+            function startGameManually() {
+                console.log("Starting game manually");
+                
+                // Hide the start screen regardless of other logic
+                if (startScreen) {
+                    console.log("Hiding start screen");
+                    startScreen.style.display = 'none';
+                } else {
+                    console.error("Start screen element not found!");
+                }
+                
+                // Call the game's start method if available
+                if (window.game && typeof window.game.startGame === 'function') {
+                    console.log("Calling game.startGame()");
+                    try {
+                        window.game.startGame();
+                    } catch (e) {
+                        console.error("Error calling game.startGame():", e);
+                    }
+                } else {
+                    console.warn("Game object or startGame method not available yet");
+                    // Set a flag to start the game when it becomes available
+                    window.shouldStartGameWhenReady = true;
+                }
+            }
+            
+            // Add multiple event handlers to ensure the button works
+            // 1. Standard click event
+            startButton.addEventListener('click', function(e) {
+                console.log("Start button clicked");
+                e.preventDefault();
+                startGameManually();
+            });
+            
+            // 2. Touch events for mobile
+            startButton.addEventListener('touchstart', function(e) {
+                console.log("Start button touch start");
+                // Don't prevent default here to allow tap highlighting
+            });
+            
+            startButton.addEventListener('touchend', function(e) {
+                console.log("Start button touch end");
+                e.preventDefault();
+                startGameManually();
+            });
+            
+            // 3. Mouse events for desktop
+            startButton.addEventListener('mousedown', function(e) {
+                console.log("Start button mouse down");
+            });
+            
+            startButton.addEventListener('mouseup', function(e) {
+                console.log("Start button mouse up");
+                startGameManually();
+            });
+            
+            // Also add direct onclick attribute as a fallback
+            startButton.onclick = function() {
+                console.log("Start button onclick attribute triggered");
+                startGameManually();
+                return false; // Prevent default
+            };
+            
+            console.log("All button handlers set up successfully");
+        });
+    </script>
 </body>
 </html> 

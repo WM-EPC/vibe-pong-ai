@@ -3,8 +3,53 @@ import { audioSystem } from './audio.js';
 
 export default class Game {
     constructor() {
-        // Initialize audio
-        audioSystem.init();
+        console.log('Game class constructor called');
+        
+        // Initialize audio with better error handling
+        try {
+            audioSystem.init();
+            console.log('Audio system initialized successfully');
+        } catch (e) {
+            console.error('Failed to initialize audio system:', e);
+        }
+        
+        // Bind methods to this context
+        this.startGame = this.startGame.bind(this);
+        this.resetGame = this.resetGame.bind(this);
+        this.toggleAudio = this.toggleAudio.bind(this);
+    }
+    
+    // Method to start the game
+    startGame() {
+        console.log('Game.startGame called');
+        
+        try {
+            // Game start logic here
+            
+            // Play a sound to confirm everything is working
+            setTimeout(() => {
+                audioSystem.playSound('bounce');
+            }, 100);
+            
+            return true;
+        } catch (e) {
+            console.error('Error in Game.startGame:', e);
+            return false;
+        }
+    }
+    
+    // Method to reset the game
+    resetGame() {
+        console.log('Game.resetGame called');
+        
+        try {
+            // Reset game logic here
+            
+            return true;
+        } catch (e) {
+            console.error('Error in Game.resetGame:', e);
+            return false;
+        }
     }
 
     checkCollisions() {
@@ -54,7 +99,11 @@ export default class Game {
         // Ball went past player 1's paddle (left side)
         if (ballX < -courtWidth / 2 - this.ball.radius) {
             this.player2Score++;
+            
+            // Play score sound directly using audioSystem when AI scores
+            // This ensures iOS compatibility by using our reliable audio system
             audioSystem.playSound('score');
+            
             this.resetBall(1);
             this.updateScoreDisplay();
             this.checkGameOver();
@@ -63,7 +112,11 @@ export default class Game {
         // Ball went past player 2's paddle (right side)
         if (ballX > courtWidth / 2 + this.ball.radius) {
             this.player1Score++;
+            
+            // Play victory sound when player scores
+            // Use audioSystem directly for better iOS compatibility
             audioSystem.playSound('score');
+            
             this.resetBall(-1);
             this.updateScoreDisplay();
             this.checkGameOver();
@@ -79,6 +132,6 @@ export default class Game {
     }
 
     toggleAudio() {
-        audioSystem.toggle();
+        return audioSystem.toggle();
     }
 } 

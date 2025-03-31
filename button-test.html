@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Button Test</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: #000;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        
+        #testContainer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        button {
+            padding: 15px 30px;
+            font-size: 18px;
+            background: transparent;
+            color: #00c3ff;
+            border: 2px solid #00c3ff;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        
+        #results {
+            background: rgba(0,0,0,0.7);
+            padding: 15px;
+            border-radius: 5px;
+            min-width: 300px;
+            min-height: 200px;
+            border: 1px solid #333;
+        }
+        
+        .success {
+            color: #4caf50;
+        }
+        
+        .failure {
+            color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div id="testContainer">
+        <h1>Button Functionality Test</h1>
+        
+        <button id="testButton">Test Button</button>
+        
+        <div id="results">
+            <h3>Test Results:</h3>
+            <div id="testResults"></div>
+        </div>
+    </div>
+
+    <script>
+        // Test results logging
+        const testResults = document.getElementById('testResults');
+        let testsPassed = 0;
+        let testsFailed = 0;
+        
+        function logResult(testName, passed, message) {
+            const resultElement = document.createElement('div');
+            resultElement.className = passed ? 'success' : 'failure';
+            resultElement.textContent = `${passed ? '✓' : '✗'} ${testName}: ${message}`;
+            testResults.appendChild(resultElement);
+            
+            if (passed) testsPassed++;
+            else testsFailed++;
+            
+            // Update summary
+            updateSummary();
+        }
+        
+        function updateSummary() {
+            const totalTests = testsPassed + testsFailed;
+            const summaryElement = document.getElementById('summary') || document.createElement('div');
+            summaryElement.id = 'summary';
+            summaryElement.innerHTML = `<strong>Summary:</strong> ${testsPassed}/${totalTests} tests passing (${Math.round(testsPassed/totalTests*100)}%)`;
+            
+            if (!document.getElementById('summary')) {
+                testResults.prepend(summaryElement);
+            }
+        }
+
+        // Button tests
+        document.addEventListener('DOMContentLoaded', function() {
+            const button = document.getElementById('testButton');
+            
+            // Test 1: Button exists
+            if (button) {
+                logResult('Button exists', true, 'Button found in DOM');
+            } else {
+                logResult('Button exists', false, 'Button not found in DOM');
+                return; // Stop if button doesn't exist
+            }
+            
+            // Test 2: Button click event listener
+            let clickTest = false;
+            button.addEventListener('click', function() {
+                clickTest = true;
+                logResult('Click event', true, 'Click event fired successfully');
+            });
+            
+            // Test 3: Button visibility (computed style)
+            const buttonStyle = window.getComputedStyle(button);
+            const isVisible = buttonStyle.display !== 'none' && 
+                             buttonStyle.visibility !== 'hidden' && 
+                             buttonStyle.opacity !== '0';
+            
+            logResult('Button visibility', isVisible, 
+                     isVisible ? 'Button is visible' : 'Button is not visible');
+            
+            // Test 4: Button positioning (z-index test)
+            const zIndex = buttonStyle.zIndex;
+            const isProperlyStacked = zIndex === 'auto' || parseInt(zIndex) >= 0;
+            
+            logResult('Button z-index', isProperlyStacked, 
+                     `Button z-index is ${zIndex} (${isProperlyStacked ? 'good' : 'potential issue'})`);
+            
+            // Instructions for manual testing
+            logResult('Manual test instructions', true, 
+                     'Please click the test button above to verify click functionality');
+        });
+        
+        // Add touch event handler
+        document.getElementById('testButton').addEventListener('touchend', function(e) {
+            e.preventDefault();
+            logResult('Touch event', true, 'Touch event fired successfully');
+        });
+    </script>
+</body>
+</html> 
