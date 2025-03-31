@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vibe Pong - Standalone Game Audio Test</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+        }
+        .game-area {
+            position: relative;
+            width: 400px;
+            height: 300px;
+            margin: 20px auto;
+            border: 2px solid #333;
+            background-color: #000;
+            overflow: hidden;
+        }
+        .paddle {
+            position: absolute;
+            width: 10px;
+            height: 60px;
+            background-color: white;
+        }
+        .ball {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: white;
+            border-radius: 50%;
+        }
+        .button-row {
+            margin: 20px 0;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 0 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .log {
+            border: 1px solid #ccc;
+            padding: 10px;
+            height: 150px;
+            text-align: left;
+            overflow-y: auto;
+            font-family: monospace;
+            background-color: #f5f5f5;
+        }
+    </style>
+</head>
+<body>
+    <h1>Vibe Pong - Standalone Game Audio Test</h1>
+    
+    <div class="button-row">
+        <button id="start-btn">Start Game</button>
+        <button id="toggle-audio-btn">Toggle Audio (ON)</button>
+    </div>
+    
+    <div class="game-area">
+        <div class="paddle" id="left-paddle" style="left: 10px; top: 120px;"></div>
+        <div class="paddle" id="right-paddle" style="right: 10px; top: 120px;"></div>
+        <div class="ball" id="ball" style="left: 195px; top: 145px;"></div>
+    </div>
+    
+    <div class="log" id="log">
+        <div>Audio test initialized. Click "Start Game" to begin.</div>
+    </div>
+    
+    <script>
+        // Simple audio manager using oscillators
+        class OscillatorAudioManager {
+            constructor() {
+                // Audio state
+                this.enabled = true;
+                this.initialized = false;
+                this.ctx = null;
+            }
+            
+            // Initialize audio system
+            init() {
+                try {
+                    // Lazy create AudioContext when needed
+                    this.initialized = true;
+                    log('Oscillator audio system ready');
+                    return true;
+                } catch (error) {
+                    log('Error initializing audio system: ' + error.message, 'error');
+                    return false;
+                }
+            }
+            
+            // Get or create AudioContext
+            getContext() {
+                if (!this.ctx) {
+                    // Create on first use
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                    
+                    // iOS specific: resume context on user interaction if suspended
+                    if (this.ctx.state === 'suspended') {
+                        const resumeAudio = () => {
+                            this.ctx.resume().then(() => {
+                                log('AudioContext resumed successfully', 'success');
+                                
+                                // Remove event listeners after first successful resume
+                                document.removeEventListener('touchstart', resumeAudio);
+                                document.removeEventListener('click', resumeAudio);
+                            });
+                        };
+                        
+                        document.addEventListener('touchstart', resumeAudio, { once: true });
+                        document.addEventListener('click', resumeAudio, { once: true });
+                    }
+                }
+                return this.ctx;
+            }
+            
+            // Play a sound by type
+            playSound(soundType) {
+                if (!this.enabled || !this.initialized) {
+                    log(`Cannot play ${soundType} sound: audio ${!this.enabled ? 'disabled' : 'not initialized'}`, 'warning');
+                    return false;
+                }
+                
+                try {
+                    const ctx = this.getContext();
+                    const oscillator = ctx.createOscillator();
+                    const gainNode = ctx.createGain();
+                    
+                    // Different sound characteristics for each type
+                    switch(soundType) {
+                        case 'bounce':
+                            // Paddle hit - short bright ping
+                            oscillator.type = 'square';
+                            oscillator.frequency.value = 440; // A4
+                            gainNode.gain.value = 0.3;
+                            
+                            // Short ping duration
+                            gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+                            gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+                            
+                            // Schedule stop
+                            setTimeout(() => oscillator.stop(), 100);
+                            break;
+                            
+                        case 'wall':
+                            // Wall hit - deeper thud
+                            oscillator.type = 'sine';
+                            oscillator.frequency.value = 330; // E4
+                            gainNode.gain.value = 0.4;
+                            
+                            // Lower frequency sound
+                            gainNode.gain.setValueAtTime(0.4, ctx.currentTime);
+                            gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+                            
+                            // Schedule stop
+                            setTimeout(() => oscillator.stop(), 200);
+                            break;
+                            
+                        case 'score':
+                            // Score sound - rising celebratory tone
+                            oscillator.type = 'sawtooth';
+                            oscillator.frequency.value = 587.33; // D5
+                            gainNode.gain.value = 0.2;
+                            
+                            // Rising celebratory sound
+                            oscillator.frequency.setValueAtTime(440, ctx.currentTime);
+                            oscillator.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.3);
+                            gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
+                            gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+                            
+                            // Schedule stop
+                            setTimeout(() => oscillator.stop(), 500);
+                            break;
+                            
+                        default:
+                            log(`Unknown sound type: ${soundType}`, 'warning');
+                            return false;
+                    }
+                    
+                    // Connect and play
+                    oscillator.connect(gainNode);
+                    gainNode.connect(ctx.destination);
+                    oscillator.start();
+                    
+                    log(`Playing ${soundType} sound with oscillator`, 'success');
+                    return true;
+                } catch (error) {
+                    log(`Error playing ${soundType} sound: ${error.message}`, 'error');
+                    return false;
+                }
+            }
+            
+            // Toggle audio on/off
+            toggle() {
+                this.enabled = !this.enabled;
+                log(`Audio ${this.enabled ? 'enabled' : 'disabled'}`);
+                return this.enabled;
+            }
+        }
+        
+        // Create audio manager
+        const audioManager = new OscillatorAudioManager();
+        audioManager.init();
+        
+        // Game elements
+        const ball = document.getElementById('ball');
+        const leftPaddle = document.getElementById('left-paddle');
+        const rightPaddle = document.getElementById('right-paddle');
+        const startBtn = document.getElementById('start-btn');
+        const toggleAudioBtn = document.getElementById('toggle-audio-btn');
+        const logElement = document.getElementById('log');
+        
+        // Game state
+        let gameRunning = false;
+        let ballX = 195;
+        let ballY = 145;
+        let ballSpeedX = 3;
+        let ballSpeedY = 2;
+        let gameLoopInterval = null;
+        
+        // Logging function
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.textContent = message;
+            
+            // Set text color based on message type
+            if (type === 'error') div.style.color = 'red';
+            else if (type === 'success') div.style.color = 'green';
+            else if (type === 'warning') div.style.color = 'orange';
+            
+            logElement.appendChild(div);
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+        
+        // Game loop
+        function gameLoop() {
+            // Move ball
+            ballX += ballSpeedX;
+            ballY += ballSpeedY;
+            
+            // Update ball position
+            ball.style.left = ballX + 'px';
+            ball.style.top = ballY + 'px';
+            
+            // Simple AI for right paddle
+            const rightPaddleY = parseInt(rightPaddle.style.top);
+            if (ballY > rightPaddleY + 30) {
+                rightPaddle.style.top = (rightPaddleY + 2) + 'px';
+            } else if (ballY < rightPaddleY + 30) {
+                rightPaddle.style.top = (rightPaddleY - 2) + 'px';
+            }
+            
+            // Collision with top and bottom walls
+            if (ballY <= 0 || ballY >= 290) {
+                ballSpeedY = -ballSpeedY;
+                audioManager.playSound('wall');
+            }
+            
+            // Collision with paddles
+            const leftPaddleY = parseInt(leftPaddle.style.top);
+            
+            // Left paddle collision
+            if (ballX <= 20 && ballY >= leftPaddleY && ballY <= leftPaddleY + 60) {
+                ballSpeedX = -ballSpeedX;
+                audioManager.playSound('bounce');
+            }
+            
+            // Right paddle collision
+            if (ballX >= 380 && ballY >= parseInt(rightPaddle.style.top) && 
+                ballY <= parseInt(rightPaddle.style.top) + 60) {
+                ballSpeedX = -ballSpeedX;
+                audioManager.playSound('bounce');
+            }
+            
+            // Score (ball goes out of bounds)
+            if (ballX <= 0) {
+                // Right player scores
+                audioManager.playSound('score');
+                resetBall();
+            } else if (ballX >= 400) {
+                // Left player scores
+                audioManager.playSound('score');
+                resetBall();
+            }
+        }
+        
+        // Reset ball to center
+        function resetBall() {
+            ballX = 195;
+            ballY = 145;
+            ballSpeedX = Math.random() > 0.5 ? 3 : -3;
+            ballSpeedY = Math.random() > 0.5 ? 2 : -2;
+        }
+        
+        // Start game
+        function startGame() {
+            if (gameRunning) return;
+            
+            gameRunning = true;
+            log('Game started');
+            startBtn.textContent = 'Reset Game';
+            
+            resetBall();
+            gameLoopInterval = setInterval(gameLoop, 20);
+            audioManager.playSound('bounce'); // Initial sound to test
+        }
+        
+        // Initialize controls
+        startBtn.addEventListener('click', function() {
+            if (gameRunning) {
+                // Reset game
+                clearInterval(gameLoopInterval);
+                gameRunning = false;
+                startBtn.textContent = 'Start Game';
+                resetBall();
+                ball.style.left = ballX + 'px';
+                ball.style.top = ballY + 'px';
+                log('Game reset');
+            } else {
+                startGame();
+            }
+        });
+        
+        toggleAudioBtn.addEventListener('click', function() {
+            const isEnabled = audioManager.toggle();
+            toggleAudioBtn.textContent = `Toggle Audio (${isEnabled ? 'ON' : 'OFF'})`;
+        });
+        
+        // Add mouse control for left paddle
+        document.querySelector('.game-area').addEventListener('mousemove', function(e) {
+            const rect = this.getBoundingClientRect();
+            const mouseY = e.clientY - rect.top;
+            
+            // Keep paddle within bounds
+            if (mouseY >= 0 && mouseY <= 240) {
+                leftPaddle.style.top = mouseY + 'px';
+            }
+        });
+        
+        // Log initial state
+        log('Game initialized. Click "Start Game" to begin playing.');
+        log('Move your mouse inside the game area to control the left paddle.');
+        log('For best audio experience, interact with the page once to unlock audio.');
+    </script>
+</body>
+</html> 

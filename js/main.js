@@ -1,22 +1,25 @@
 import * as THREE from 'three';
+import { audioSystem } from './audio.js';
 
 // Using ES modules import through the importmap in the HTML
 // This allows us to use the latest Three.js version without bundling
 
 // Global audio unlocking mechanism for iOS and other platforms
-let audioCtx;
-let audioUnlocked = false;
+// let audioCtx;
+// let audioUnlocked = false;
 
 // Add an interval reference for continuous audio checking
-let audioContextCheckInterval = null;
+// let audioContextCheckInterval = null;
 
 // Store decoded audio buffers for reuse
-let decodedBuffers = {
-    bounce: null,
-    wall: null,
-    score: null
-};
+// let decodedBuffers = {
+//     bounce: null,
+//     wall: null,
+//     score: null
+// };
 
+// NOTE: These are legacy sounds - now using AudioManager from config.js instead
+/*
 // Base64-encoded audio data for sounds - replace with actual sounds
 const soundData = {
     // Short ping sound for bounce - cleaner version
@@ -24,85 +27,14 @@ const soundData = {
     // Complementary mid-range sound for wall hit
     wall: "data:audio/wav;base64,UklGRqgBAABXQVZFZm10IBAAAAABAAEARKwAAESsAAABAAgAZGF0YYQBAACBgYGBgYGBgYGAf3t9fYCAgICAgICAgYGBgYCAfX19fYCAgICAgICAgYGBgX9+fn5+gICAgICAgICAgICAfn5+foCAgICAgICAgICAf39/f3+AgICAgICAgICAf4CAgICAgICAgH99fX19gICAgICAgICBgYGBgIB9fX19gICAgICAgICBgYGBf35+fn6AgICAgICAgICAgIB+fn5+gICAgICAgICAgIB/f39/f4CAgICAgICAgICAgICAgICAgIB/fX19fYCAgICAgICAgYGBgYCAe35+gICAgICAgICAgYGBgX9+fn5+gICAgICAgICAgICAf39/f3+AgICAgICAgICAgH9/f39/gICAgICAgICAgIB/f39/f4CAgICAgICAgICAf35/gICAAABAQEE5NCoAAAATSURBVAsCAxgABggHEAgBBwkFCQYAYk79",
     // Distinctive victory sound for scoring
-    score: "data:audio/wav;base64,UklGRiwDAABXQVZFZm10IBAAAAABAAEARKwAAESsAAABAAgAZGF0YQgDAACBgYGBgYGCgoKCgoKCgoKCg4ODgoKCgYGBgYGBgYGBgYCBgYCAgICAgICAgICAgICAgICBgYGBgYGBgYGBgYGBgYGBgYGBgoKCgoKDg4ODgoKCgoKCgYGBgICAgICAgH9/gICAf39/f39/f39/f39/f3+AgICAgICAgICAgICAgICAgICAgIGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYCAgICAgICAgICAgICAfn5+fn5+fn5+fn5+fn5+fn5+f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f3+AgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGBgYGBgYGBgYGBgYGBgYGBgYCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgIGBgICAf39/f39/f39/f39/f39/f4CAgICAgICAgICAgICAgICAgIGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYCAgICAgICAgICAgIGBgYGBgYGBgYGBgIGBgICAgICAgICAgICAf39/f39/f39/f39/f39/f39/f39/f39/f4CAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGAAAC/4QzH6SIAAAAASUVORK5CYII="
+    score: "data:audio/wav;base64,UklGRiwDAABXQVZFZm10IBAAAAABAAEARKwAAESsAAABAAgAZGF0YQgDAACBgYGBgYGCgoKCgoKCgoKCg4ODgoKCgYGBgYGBgYGBgYCBgYCAgICAgICAgICAgICAgICBgYGBgYGBgYGBgYGBgYGBgYGBgoKCgoKDg4ODgoKCgoKCgYGBgICAgICAgH9/gICAf39/f39/f39/f39/f3+AgICAgICAgICAgICAgICAgICAgIGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYCAgICAgICAgICAgICAfn5+fn5+fn5+fn5+fn5+fn5+f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f3+AgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGBgYGBgYGBgYGBgYGBgYGBgYCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgIGBgICAf39/f39/f39/f39/f39/f4CAgICAgICAgICAgICAgICAgIGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYCAgICAgICAgICAgIGBgYGBgYGBgYGBgIGBgICAgICAgICAgICAf39/f39/f39/f39/f39/f39/f39/f39/f4CAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGAAAC/4QzH6SIAAAAASUVORK5CYII="
 };
+*/
+const soundData = {};
 
 // Function to play a sound from a decoded buffer using Web Audio API
 function playSoundFromBuffer(soundType) {
-    if (!audioCtx || !audioUnlocked) return false;
-    
-    try {
-        // Create a new audio source for this play
-        const source = audioCtx.createBufferSource();
-        
-        // If we have a decoded buffer, use it
-        if (decodedBuffers[soundType]) {
-            source.buffer = decodedBuffers[soundType];
-            source.connect(audioCtx.destination);
-            source.start(0);
-            console.log(`Playing ${soundType} sound from buffer`);
-            return true;
-        }
-        
-        // If we don't have the buffer yet, try to decode it
-        if (soundData[soundType]) {
-            // Extract the base64 data from the data URL
-            let base64String = soundData[soundType].split(',')[1];
-            if (!base64String) {
-                console.error("Invalid sound data format for", soundType);
-                return false;
-            }
-            
-            try {
-                // Convert base64 to array buffer
-                const binaryString = window.atob(base64String);
-                const len = binaryString.length;
-                const bytes = new Uint8Array(len);
-                for (let i = 0; i < len; i++) {
-                    bytes[i] = binaryString.charCodeAt(i);
-                }
-                
-                // Decode the audio data
-                audioCtx.decodeAudioData(
-                    bytes.buffer,
-                    (decodedBuffer) => {
-                        // Store the decoded buffer for future use
-                        decodedBuffers[soundType] = decodedBuffer;
-                        console.log(`Decoded buffer for ${soundType}`);
-                        
-                        // Create and play the source
-                        const newSource = audioCtx.createBufferSource();
-                        newSource.buffer = decodedBuffer;
-                        newSource.connect(audioCtx.destination);
-                        newSource.start(0);
-                        console.log(`Playing ${soundType} sound after decoding`);
-                    },
-                    (error) => {
-                        console.error("Error decoding audio data for", soundType, error);
-                        // Fall back to script-based sound if available
-                        if (window[`create${soundType.charAt(0).toUpperCase() + soundType.slice(1)}Sound`]) {
-                            window[`create${soundType.charAt(0).toUpperCase() + soundType.slice(1)}Sound`]();
-                        }
-                    }
-                );
-                
-                return true;
-            } catch (e) {
-                console.error("Error processing audio data:", e);
-                // Fall back to script-based sound
-                if (window[`create${soundType.charAt(0).toUpperCase() + soundType.slice(1)}Sound`]) {
-                    window[`create${soundType.charAt(0).toUpperCase() + soundType.slice(1)}Sound`]();
-                    return true;
-                }
-                return false;
-            }
-        }
-        
-        return false;
-    } catch (e) {
-        console.error("Error playing sound buffer:", e);
-        return false;
-    }
+    return audioSystem.playSound(soundType);
 }
 
 // Improved function to unlock audio on user interaction
@@ -463,91 +395,24 @@ class PongGame {
     // Setup audio with a simple audio pool for better performance
     setupSounds() {
         try {
-            // Create an audio system that works better across devices including iOS
-            this.soundEnabled = true;
+            // Use our new audio system
+            audioSystem.init();
             
-            // Check if running on iOS
-            this.isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-            this.debug("Device detection - iOS: " + this.isIOS);
-            
-            // Ensure audio is unlocked right away if possible
-            if (!audioUnlocked) {
-                unlockAudio();
-            }
-            
-            // Define sound playback functions that use our enhanced buffer-based system first,
-            // but fall back to script-based sounds if available
+            // Set up sound play functions that use the new audio system
             this.playSoundFunction = {
                 bounce: () => {
-                    this.ensureAudioContext();
-                    
-                    // Try to play using buffer first (most reliable)
-                    if (playSoundFromBuffer('bounce')) {
-                        return true;
-                    }
-                    
-                    // Fall back to script-based sound if available
-                    if (window.createBounceSound) {
-                        try {
-                            window.createBounceSound();
-                            return true;
-                        } catch (e) {
-                            console.error("Bounce sound error:", e);
-                            return false;
-                        }
-                    }
-                    
-                    return false;
+                    return audioSystem.playSound('bounce');
                 },
                 wall: () => {
-                    this.ensureAudioContext();
-                    
-                    // Try to play using buffer first (most reliable)
-                    if (playSoundFromBuffer('wall')) {
-                        return true;
-                    }
-                    
-                    // Fall back to script-based sound if available
-                    if (window.createWallSound) {
-                        try {
-                            window.createWallSound();
-                            return true;
-                        } catch (e) {
-                            console.error("Wall sound error:", e);
-                            return false;
-                        }
-                    }
-                    
-                    return false;
+                    return audioSystem.playSound('wall');
                 },
                 score: () => {
-                    this.ensureAudioContext();
-                    
-                    // Try to play using buffer first (most reliable)
-                    if (playSoundFromBuffer('score')) {
-                        return true;
-                    }
-                    
-                    // Fall back to script-based sound if available
-                    if (window.createScoreSound) {
-                        try {
-                            window.createScoreSound();
-                            return true;
-                        } catch (e) {
-                            console.error("Score sound error:", e);
-                            return false;
-                        }
-                    }
-                    
-                    return false;
+                    return audioSystem.playSound('score');
                 }
             };
             
-            // Check if sounds will be available
-            this.audioReady = audioUnlocked;
-            
-            // Set up periodic check to keep audio system alive
-            this.setupPeriodicAudioCheck();
+            // Audio is ready
+            this.audioReady = true;
         } catch (error) {
             this.debug("WARNING: Could not initialize sounds: " + error.message);
         }
@@ -563,43 +428,13 @@ class PongGame {
     
     // Ensure the audio context is active before playing sounds
     ensureAudioContext() {
-        // If we don't have a context or it's suspended, retry unlocking
-        if (!audioCtx || audioCtx.state === 'suspended') {
-            unlockAudio();
-            return false;
-        } else if (audioCtx.state === 'running') {
-            // All good, context is running
-            return true;
-        }
-        
-        return false;
+        // Use the new audio system
+        audioSystem.getContext();
     }
     
     // Set up a periodic check specific to this game instance
     setupPeriodicAudioCheck() {
-        // Set up an interval to periodically check if sounds work
-        this.audioCheckInterval = setInterval(() => {
-            if (this.soundEnabled) {
-                // Ensure audio context is active
-                this.ensureAudioContext();
-                
-                // On iOS, we'll create a silent buffer sound every 20 seconds
-                // to keep the audio system alive
-                if (this.isIOS && audioCtx && audioCtx.state === 'running') {
-                    // Create a silent buffer and play it
-                    const silentBuffer = audioCtx.createBuffer(1, 1, 22050);
-                    const silentSource = audioCtx.createBufferSource();
-                    silentSource.buffer = silentBuffer;
-                    silentSource.connect(audioCtx.destination);
-                    
-                    try {
-                        silentSource.start(0);
-                    } catch(e) {
-                        console.warn("Silent sound failed:", e);
-                    }
-                }
-            }
-        }, 20000); // Check every 20 seconds
+        // Our new audio system handles this 
     }
     
     // Clean up method to be called when game is destroyed
@@ -616,47 +451,20 @@ class PongGame {
         // Don't try to play sounds if they're disabled
         if (!this.soundEnabled) return;
         
-        // Always ensure audio context is ready
-        this.ensureAudioContext();
-        
-        // First, try to play directly from buffer (most reliable, especially on iOS)
-        if (playSoundFromBuffer(soundType)) {
-            return;
-        }
-        
-        // If buffer playback failed, try the sound function
-        try {
-            const soundFunc = this.playSoundFunction[soundType];
-            if (soundFunc) {
-                soundFunc();
-            }
-        } catch (error) {
-            console.error("Sound playback error:", error);
-        }
+        // Use the new audio system
+        audioSystem.playSound(soundType);
     }
 
     // Play a test sound for initialization
     playInitialSound() {
         this.debug("Playing initial sound");
         
-        // Make sure audio system is initialized
-        this.ensureAudioContext();
-        
-        // Just try the bounce sound
+        // Use the new audio system for the initial sound
         if (this.soundEnabled) {
             // For iOS, we need to use a timeout to allow the audio context to stabilize
-            if (this.isIOS) {
-                setTimeout(() => {
-                    // Try buffer-based playback first (most reliable on iOS)
-                    if (!playSoundFromBuffer('bounce')) {
-                        // Fall back to regular playSound if buffer playback fails
-                        this.playSound('bounce');
-                    }
-                }, 100);
-            } else {
-                // On desktop, just play the sound directly
-                this.playSound('bounce');
-            }
+            setTimeout(() => {
+                audioSystem.playSound('bounce');
+            }, 100);
         }
     }
 

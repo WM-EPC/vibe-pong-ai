@@ -204,6 +204,7 @@ export class AudioManager {
             
             // If we have a decoded buffer, use it
             if (this.buffers[bufferKey]) {
+                console.debug(`[AudioManager] Playing ${soundType} from existing buffer`);
                 const source = this.audioContext.createBufferSource();
                 source.buffer = this.buffers[bufferKey];
                 source.connect(this.audioContext.destination);
@@ -214,21 +215,26 @@ export class AudioManager {
             // If we don't have the buffer yet, try to decode it on demand
             const soundKey = soundType.toUpperCase();
             if (AUDIO.SOUND_DATA[soundKey]) {
+                console.debug(`[AudioManager] No decoded buffer found for ${soundType}, attempting to decode on demand`);
                 this._decodeAudioData(soundKey).then(success => {
                     if (success && this.buffers[bufferKey]) {
+                        console.debug(`[AudioManager] Playing ${soundType} after on-demand decoding`);
                         const newSource = this.audioContext.createBufferSource();
                         newSource.buffer = this.buffers[bufferKey];
                         newSource.connect(this.audioContext.destination);
                         newSource.start(0);
+                    } else {
+                        console.warn(`[AudioManager] Failed to decode ${soundType} on demand`);
                     }
                 });
                 
                 return true;
             }
             
+            console.warn(`[AudioManager] No sound data found for ${soundType}`);
             return false;
         } catch (error) {
-            console.error("Error playing sound:", error);
+            console.error("[AudioManager] Error playing sound:", error);
             return false;
         }
     }
@@ -243,12 +249,15 @@ export class AudioManager {
         if (!this.audioContext || !AUDIO.SOUND_DATA[soundKey]) return false;
         
         try {
+            console.debug(`[AudioManager] Decoding audio data for ${soundKey}...`);
             // Extract the base64 data from the data URL
             const base64String = AUDIO.SOUND_DATA[soundKey].split(',')[1];
             if (!base64String) {
-                console.error("Invalid sound data format for", soundKey);
+                console.error("[AudioManager] Invalid sound data format for", soundKey);
                 return false;
             }
+            
+            console.debug(`[AudioManager] Base64 data length for ${soundKey}: ${base64String.length} chars`);
             
             // Convert base64 to array buffer
             const binaryString = window.atob(base64String);
@@ -258,17 +267,24 @@ export class AudioManager {
                 bytes[i] = binaryString.charCodeAt(i);
             }
             
+            console.debug(`[AudioManager] Binary data size for ${soundKey}: ${bytes.length} bytes`);
+            
             // Decode the audio data
             const bufferKey = soundKey.toLowerCase();
-            const decodedBuffer = await this.audioContext.decodeAudioData(bytes.buffer);
-            
-            // Store the decoded buffer for future use
-            this.buffers[bufferKey] = decodedBuffer;
-            console.log(`Decoded buffer for ${soundKey}`);
-            
-            return true;
+            try {
+                const decodedBuffer = await this.audioContext.decodeAudioData(bytes.buffer);
+                
+                // Store the decoded buffer for future use
+                this.buffers[bufferKey] = decodedBuffer;
+                console.debug(`[AudioManager] Successfully decoded buffer for ${soundKey} (duration: ${decodedBuffer.duration.toFixed(2)}s, channels: ${decodedBuffer.numberOfChannels})`);
+                
+                return true;
+            } catch (decodeError) {
+                console.error(`[AudioManager] Error during audio decoding for ${soundKey}:`, decodeError);
+                return false;
+            }
         } catch (error) {
-            console.error(`Error decoding audio data for ${soundKey}:`, error);
+            console.error(`[AudioManager] Error preparing audio data for ${soundKey}:`, error);
             return false;
         }
     }

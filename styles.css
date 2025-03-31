@@ -1,0 +1,21 @@
+#startScreen {
+    /* ... existing styles ... */
+}
+
+.audio-test-link {
+    display: block;
+    margin-top: 15px;
+    color: #00c3ff;
+    font-size: 14px;
+    text-decoration: none;
+    padding: 8px 15px;
+    border: 1px solid #00c3ff;
+    border-radius: 4px;
+    background: rgba(0, 195, 255, 0.1);
+    transition: all 0.3s;
+}
+
+.audio-test-link:hover {
+    background: rgba(0, 195, 255, 0.3);
+    box-shadow: 0 0 10px rgba(0, 195, 255, 0.5);
+} 

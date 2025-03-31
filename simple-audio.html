@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Audio Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .button-container {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            min-width: 120px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:active {
+            background-color: #3e8e41;
+        }
+        .log {
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+            padding: 10px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            margin-top: 20px;
+        }
+        .back {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+            text-decoration: none;
+        }
+        .back:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>Simple Audio Test</h1>
+    
+    <div class="container">
+        <p>Click each button to test a different sound. This page uses completely inline audio for maximum compatibility.</p>
+        
+        <div class="button-container">
+            <button onclick="playInlineSound('bounce')">Play Bounce</button>
+            <button onclick="playInlineSound('wall')">Play Wall</button>
+            <button onclick="playInlineSound('score')">Play Score</button>
+        </div>
+        
+        <div id="log" class="log"></div>
+    </div>
+    
+    <a href="/" class="back">← Back to Game</a>
+    
+    <script>
+        // Get the log element
+        const log = document.getElementById('log');
+        
+        // Log function
+        function logMessage(message, type = 'info') {
+            const color = type === 'error' ? 'red' : 
+                          type === 'success' ? 'green' : 
+                          type === 'warning' ? 'orange' : 'blue';
+            
+            const entry = document.createElement('div');
+            entry.style.color = color;
+            entry.style.marginBottom = '5px';
+            entry.textContent = message;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+        
+        // Log initialization
+        logMessage('Audio test page loaded. Click any button to play a sound.');
+        
+        // Simple sound function with inline audio data
+        function playInlineSound(type) {
+            try {
+                logMessage(`Attempting to play ${type} sound...`);
+                
+                // Create audio context (modern browsers)
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                
+                if (!AudioContext) {
+                    logMessage('AudioContext not supported in this browser. Trying HTML5 Audio...', 'warning');
+                    playWithHTMLAudio(type);
+                    return;
+                }
+                
+                // Use a single shared context
+                window.audioContext = window.audioContext || new AudioContext();
+                const context = window.audioContext;
+                
+                // Simple short sounds for testing
+                const sounds = {
+                    bounce: 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//tUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAeAAAmOwAMDBERERQUFBQUGhoaGhofHx8fHyUlJSUlKSkpKSkvLy8vLzQ0NDQ0Ojo6OjpAQEBAQEVFRUVFS0tLS0tRUVFRUVZWVlZWXFxcXFxiYmJiYmhoaGhoaG5ubm5udHR0dHR5eXl5eX9/f39/hYWFhYWKioqKipCQkJCQlpaWlpabnJycnKGhoaGhpqampqasrKysrLGxsbGxtrm5ubm+vr6+vsTExMTEysrKysrQ0NDQ0NXV1dXV29vb29vh4eHh4ebm5ubm7e3t7e3y8vLy8vj4+Pj4/v7+/v4AAAA8TEFNRTMuMTAwA8MAAAAAAAAAABRFAAOgAAAJeoBIigABAAAAAA==',
+                    wall: 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//tUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAeAAA7WAAKCgoKDw8PDw8UFBQUFBkZGRkZHh4eHh4jIyMjIygoKCgoLS0tLS0zMzMzMzg4ODg4PT09PT1DQ0NDSE1NTU1NUlJSUlJYWFhYWF1dXV1dY2NjY2NpaWlpaW5ubm5udHR0dHR5eXl5eX9/f39/hISEhISKioqKio+Pj4+PlZWVlZWaoJqamqCgoKCgpaWlpaWrq6urq7CwsLCwtbW1tbW7u7u7u8DAwMDAxsbGxsbLy8vLy9DQ0NDQ1tbW1tbb29vb2+Dg4ODg5ubm5ubr6+vr6/Hx8fHx9vb29vb7+/v7+wAAADxMQU1FMy4xMDADwwAAAAAAAAAURQADwAAAAnqdIOsAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//sURAAAAr4DrNQSAAgAAA0goAABGCnnOawkcAgAADSCgAAEIiIiIhEREQA==',
+                    score: 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//tUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAvAAAuFgAQEBgYGCAgKCgoMDAwODg4QEBISEhQUFhYWGBgaGhoaHBweHh4gICIiIiQkJiYmKCgqKiosLC4uLjAwMjIyNDQ2NjY4ODo6Ojw8PT09Pj4+Pj8/Pz8/Pz+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/gAAADxMQU1FMy4xMDADwwAAAAAAAAAURQADoAAAAvLM2IoAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='
+                };
+                
+                // Get the selected sound data
+                const soundData = sounds[type] || sounds.bounce;
+                
+                // Convert base64 to array buffer
+                const byteString = atob(soundData.split(',')[1]);
+                const arrayBuffer = new ArrayBuffer(byteString.length);
+                const intArray = new Uint8Array(arrayBuffer);
+                
+                for (let i = 0; i < byteString.length; i++) {
+                    intArray[i] = byteString.charCodeAt(i);
+                }
+                
+                // Decode the audio data
+                context.decodeAudioData(arrayBuffer, 
+                    function(buffer) {
+                        // Create sound source
+                        const source = context.createBufferSource();
+                        source.buffer = buffer;
+                        source.connect(context.destination);
+                        
+                        // Play the sound
+                        source.start(0);
+                        logMessage(`Playing ${type} sound successfully`, 'success');
+                    },
+                    function(err) {
+                        logMessage(`Failed to decode audio: ${err}`, 'error');
+                        // Try fallback method
+                        playWithHTMLAudio(type);
+                    }
+                );
+            } catch (error) {
+                logMessage(`Error playing sound: ${error.message}`, 'error');
+                // Try fallback method
+                playWithHTMLAudio(type);
+            }
+        }
+        
+        // Fallback to HTML5 Audio if Web Audio API fails
+        function playWithHTMLAudio(type) {
+            try {
+                logMessage(`Trying HTML5 Audio for ${type}...`);
+                
+                const audio = new Audio();
+                
+                // Simple short sounds for testing (same data, different format)
+                const sounds = {
+                    bounce: 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//tUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAeAAAmOwAMDBERERQUFBQUGhoaGhofHx8fHyUlJSUlKSkpKSkvLy8vLzQ0NDQ0Ojo6OjpAQEBAQEVFRUVFS0tLS0tRUVFRUVZWVlZWXFxcXFxiYmJiYmhoaGhoaG5ubm5udHR0dHR5eXl5eX9/f39/hYWFhYWKioqKipCQkJCQlpaWlpabnJycnKGhoaGhpqampqasrKysrLGxsbGxtrm5ubm+vr6+vsTExMTEysrKysrQ0NDQ0NXV1dXV29vb29vh4eHh4ebm5ubm7e3t7e3y8vLy8vj4+Pj4/v7+/v4AAAA8TEFNRTMuMTAwA8MAAAAAAAAAABRFAAOgAAAJeoBIigABAAAAAA==',
+                    wall: 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//tUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAeAAA7WAAKCgoKDw8PDw8UFBQUFBkZGRkZHh4eHh4jIyMjIygoKCgoLS0tLS0zMzMzMzg4ODg4PT09PT1DQ0NDSE1NTU1NUlJSUlJYWFhYWF1dXV1dY2NjY2NpaWlpaW5ubm5udHR0dHR5eXl5eX9/f39/hISEhISKioqKio+Pj4+PlZWVlZWaoJqamqCgoKCgpaWlpaWrq6urq7CwsLCwtbW1tbW7u7u7u8DAwMDAxsbGxsbLy8vLy9DQ0NDQ1tbW1tbb29vb2+Dg4ODg5ubm5ubr6+vr6/Hx8fHx9vb29vb7+/v7+wAAADxMQU1FMy4xMDADwwAAAAAAAAAURQADwAAAAnqdIOsAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//sURAAAAr4DrNQSAAgAAA0goAABGCnnOawkcAgAADSCgAAEIiIiIhEREQA==',
+                    score: 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//tUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAvAAAuFgAQEBgYGCAgKCgoMDAwODg4QEBISEhQUFhYWGBgaGhoaHBweHh4gICIiIiQkJiYmKCgqKiosLC4uLjAwMjIyNDQ2NjY4ODo6Ojw8PT09Pj4+Pj8/Pz8/Pz+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/gAAADxMQU1FMy4xMDADwwAAAAAAAAAURQADoAAAAvLM2IoAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='
+                };
+                
+                // Set the audio source
+                audio.src = sounds[type] || sounds.bounce;
+                
+                // Play the sound
+                audio.play().then(() => {
+                    logMessage(`Played ${type} sound with HTML5 Audio`, 'success');
+                }).catch(err => {
+                    logMessage(`HTML5 Audio playback failed: ${err.message}`, 'error');
+                    
+                    // Final fallback - try to create a simple beep with oscillator
+                    try {
+                        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                        const oscillator = ctx.createOscillator();
+                        oscillator.type = 'sine';
+                        
+                        // Different frequencies for different sound types
+                        if (type === 'bounce') oscillator.frequency.value = 440; // A4
+                        else if (type === 'wall') oscillator.frequency.value = 330; // E4
+                        else oscillator.frequency.value = 523; // C5
+                        
+                        oscillator.connect(ctx.destination);
+                        oscillator.start();
+                        setTimeout(() => {
+                            oscillator.stop();
+                            logMessage(`Generated ${type} sound with oscillator`, 'success');
+                        }, 200);
+                    } catch (e) {
+                        logMessage('All audio methods failed. Your browser may not support audio.', 'error');
+                    }
+                });
+            } catch (error) {
+                logMessage(`HTML5 Audio failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Try to unlock audio on iOS
+        function unlockAudio() {
+            document.addEventListener('touchstart', function() {
+                // Create and play silent audio to unlock
+                const silentSound = new Audio('data:audio/mp3;base64,SUQzBAAAAAAAI1TSU0UAAAAPAAADTGF2ZjU4LjEyLjEwMAAAAAAAAAAAAAAA/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAAwAAAGQAD///////////////////////////////////////////////AAAAAExhdmM1OC4yMS4xMDAAAAAAAAAAAAD/4zDEAAMJAYvEAAgAACB8zCcIAAAAAErYEAAAAOAYP//////////gGP//////////4Bg=');
+                silentSound.play().catch(() => {});
+            }, {once: true});
+        }
+        
+        // Call unlock function
+        unlockAudio();
+    </script>
+</body>
+</html> 

@@ -2,136 +2,255 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Vibe Pong - Audio Test v0.1.6ai</title>
-
-    <!-- Import map for Three.js -->
-    <script type="importmap">
-    {
-        "imports": {
-            "three": "https://unpkg.com/three@0.161.0/build/three.module.js",
-            "three/addons/": "https://unpkg.com/three@0.161.0/examples/jsm/"
-        }
-    }
-    </script>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibe Pong - Audio Test</title>
     <style>
         body {
-            margin: 0;
-            overflow: hidden;
-            font-family: 'Orbitron', sans-serif;
-            background-color: #0a0a0f;
-            color: white;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
+            font-family: 'Arial', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f0f0;
+            color: #333;
         }
-        
         h1 {
-            font-size: 48px;
-            margin-bottom: 20px;
-            color: #ffea00;
-            text-shadow: 0 0 20px rgba(255, 234, 0, 0.7), 0 0 40px rgba(255, 200, 0, 0.4);
-            animation: glow 2s infinite alternate;
-        }
-        
-        @keyframes glow {
-            from {
-                text-shadow: 0 0 20px rgba(255, 234, 0, 0.7), 0 0 40px rgba(255, 200, 0, 0.4);
-            }
-            to {
-                text-shadow: 0 0 30px rgba(255, 234, 0, 0.9), 0 0 50px rgba(255, 200, 0, 0.7);
-            }
-        }
-        
-        .description {
-            max-width: 600px;
+            color: #2c3e50;
             text-align: center;
-            margin-bottom: 40px;
-            line-height: 1.6;
-            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 30px;
         }
-        
-        .button {
-            padding: 15px 40px;
-            margin: 15px;
-            background-color: transparent;
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .button-row {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #3498db;
             color: white;
-            border: 2px solid #00c3ff;
+            border: none;
+            padding: 10px 20px;
             border-radius: 5px;
-            font-size: 20px;
             cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 0 15px rgba(0, 195, 255, 0.5);
-            font-family: 'Orbitron', sans-serif;
+            font-size: 16px;
+            transition: background-color 0.3s;
         }
-        
-        .button:hover {
-            background-color: rgba(0, 195, 255, 0.2);
-            box-shadow: 0 0 20px rgba(0, 195, 255, 0.8), 0 0 40px rgba(0, 150, 255, 0.4);
-            transform: scale(1.05);
+        button:hover {
+            background-color: #2980b9;
         }
-        
-        .version {
-            position: absolute;
-            bottom: 10px;
-            left: 10px;
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.5);
+        .log-container {
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            height: 200px;
+            overflow-y: auto;
             font-family: monospace;
+            margin-top: 20px;
         }
-        
-        /* Add required Vibe Jam 2025 attribution link */
-        .attribution {
-            font-family: 'system-ui', sans-serif;
-            position: fixed;
-            bottom: -1px;
-            right: -1px;
-            padding: 7px;
-            font-size: 14px;
-            font-weight: bold;
-            background: #fff;
-            color: #000;
+        .log-entry {
+            margin-bottom: 5px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        .success {
+            color: #27ae60;
+        }
+        .error {
+            color: #e74c3c;
+        }
+        .info {
+            color: #2980b9;
+        }
+        .warning {
+            color: #f39c12;
+        }
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #7f8c8d;
             text-decoration: none;
-            border-top-left-radius: 12px;
-            z-index: 10000;
-            border: 1px solid #fff;
+        }
+        .back-link:hover {
+            color: #2c3e50;
+        }
+        .hidden {
+            display: none;
         }
     </style>
-    
-    <!-- Google Fonts for a retro feel -->
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <h1>VIBE PONG</h1>
-    <h2 style="margin-top: 0; color: #00c3ff;">Audio System Test</h2>
+    <h1>Vibe Pong - Audio Test</h1>
     
-    <div class="description">
-        This page tests our improved audio system with higher quality sounds.
-        Click the button below to load the test interface and try different game sounds.
+    <div class="container">
+        <h2>Test Sounds</h2>
+        <p>Click the buttons below to test each sound. This test page uses direct audio elements for maximum compatibility.</p>
+        
+        <!-- Embed audio elements directly in the page -->
+        <audio id="bounce-sound" preload="auto">
+            <!-- Multiple sources for compatibility -->
+            <source src="data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tAwAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAASAAAeMwAUFBQUFCgUFBQUFDMzMzMzM0dHR0dHR1paWlpaWlpabnNzc3Nzc4aGhoaGhoaGlJmZmZmZmZmZs7Ozs7Ozs7PGxsbGxsbG0NbW1tbW1tbW4+Pj4+Pj4+Pj8fHx8fHx8fH/////////////////////////////////AAAAAExhdmM1OC4xMwAAAAAAAAAAAAAAACQCQgAAAAAAHjMFJuRcAAAAAAD/+xDEAAAJdINSMGMAITGQalYeYEQhMla9J9GgAAIIAABjQcZECETHAhU9voAAQhEyICTMy9J9bXRdN9DykQIBAMBAMBAMYxjGP6YxjGMYxjGMYz9J9J9J9J9J9J9J9J9JxwMfBBwMYxjGMYxoIAgCAIA+D4Pg+D59J9JxoIOfBA59JxoIOD59JxoHwfB8HwfAAAAAAAAQCAQCAQAACAQCAQAAQEAgEAgAAAA" type="audio/mpeg">
+            <source src="./assets/audio/bounce.mp3" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
+        
+        <audio id="wall-sound" preload="auto">
+            <source src="data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tAwAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAeAAAKygAHBwcHDw8PDw8PGBgYGBggICAgICApKSkpKTExMTExMTk5OTk5QUFBQUFBSUlJSUlRUVFRUVFZWVlZWWFhYWFhYWlpaWlpcXFxcXFxeXl5eXmBgYGBgYmJiYmJkZGRkZGRmZmZmZmhoaGhoampqampsbGxsbG5ubm5ucHBwcHBycnJycnR0dHR0dHZ2dnZ2eHh4eHh6urq6ur/////////////////////////////////AAAAAExhdmM1OC4xMwAAAAAAAAAAAAAAACQDkgAAAAAACs/l7QyoAAAAAAD/+xDEAAAOFINBtPGAAhsh6NJ5whgkIwVo2n7gABBisoAAZMHnQQDBAEAQDBZMYQRh4L/v/ZVs3OdYHCTLw/MDgcLhy77v//8uXLgcLhoM8O/+XLly4HCwuHw2Gn//////////l34aMHCTDQfL/lwOHDw+YHBwwN1g8Piy77//9kvHiy4eCQtHPgiQgGBoD4YeE/AWZl4GAQA2KCFmYmfhDImYmmICkrLywsb/Q0NNNM0NDtVABQDAwGyZZ1kWK6ZEXGAA" type="audio/mpeg">
+            <source src="./assets/audio/wall.mp3" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
+        
+        <audio id="score-sound" preload="auto">
+            <source src="data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tAwAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAZAAAYDAAGBg0NDQ0NFBQUFBQbGxsbGyIiIiIiKSkpKSkwMDAwMDc3Nzc3Pj4+Pj5FRUVFRUVNTU1NVVVVVVVVXV1dXV1kZGRkZGxsbGxsc3Nzc3N6enp6eoGBgYGBiYmJiYmQkJCQkJeXl5eXn5+fn5+mpqamprOzs7OzysrKysrS0tLS0tra2tra2uHh4eHh6Ojo6Ojw8PDw8P///wAAAExhdmM1OC4xMwAAAAAAAAAAAAAAACQE2AAAAAAA" type="audio/mpeg">
+            <source src="./assets/audio/score.mp3" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
+        
+        <div class="button-row">
+            <button id="toggle-btn">Audio: ON</button>
+        </div>
+        
+        <div class="button-row">
+            <button id="bounce-btn">Play Bounce</button>
+            <button id="wall-btn">Play Wall</button>
+            <button id="score-btn">Play Score</button>
+        </div>
+        
+        <div class="log-container" id="log-container">
+            <div class="log-entry info">Audio test page loaded. Click any sound button to play.</div>
+        </div>
     </div>
     
-    <button id="start-test" class="button">START AUDIO TEST</button>
+    <a href="/" class="back-link">← Back to Game</a>
     
-    <div class="version">v0.1.6ai</div>
-    
-    <!-- Attribution link -->
-    <a target="_blank" href="https://jam.pieter.com" class="attribution">🕹️ Vibe Jam 2025</a>
-
     <script>
-        document.getElementById('start-test').addEventListener('click', function() {
-            // Create and add script
-            const script = document.createElement('script');
-            script.id = 'audio-test-script';
-            script.type = 'module';
-            script.src = './js/test-audio.js';
-            document.body.appendChild(script);
+        // Audio state
+        let audioEnabled = true;
+        
+        // DOM elements
+        const toggleBtn = document.getElementById('toggle-btn');
+        const bounceBtn = document.getElementById('bounce-btn');
+        const wallBtn = document.getElementById('wall-btn');
+        const scoreBtn = document.getElementById('score-btn');
+        const logContainer = document.getElementById('log-container');
+        
+        // Audio elements
+        const bounceSound = document.getElementById('bounce-sound');
+        const wallSound = document.getElementById('wall-sound');
+        const scoreSound = document.getElementById('score-sound');
+        
+        // Log function
+        function log(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = message;
+            logContainer.appendChild(entry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+        
+        // Play sound function
+        function playSound(sound, name) {
+            if (!audioEnabled) {
+                log(`Audio is disabled. Enable it to play sounds.`, 'warning');
+                return;
+            }
             
-            // Hide the start button
-            this.style.display = 'none';
+            try {
+                // Reset sound to beginning
+                sound.currentTime = 0;
+                
+                // Play and log result
+                const playPromise = sound.play();
+                
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        log(`Playing ${name} sound: success`, 'success');
+                    }).catch(error => {
+                        log(`Could not play ${name} sound: ${error.message}`, 'error');
+                        
+                        // Try creating a new audio element as a last resort
+                        try {
+                            const newAudio = new Audio();
+                            if (sound.querySelector('source')) {
+                                newAudio.src = sound.querySelector('source').src;
+                                newAudio.play().then(() => {
+                                    log(`Playing ${name} with fallback: success`, 'success');
+                                }).catch(err => {
+                                    log(`Fallback playback failed for ${name}: ${err.message}`, 'error');
+                                });
+                            }
+                        } catch (e) {
+                            log(`All playback methods failed for ${name}`, 'error');
+                        }
+                    });
+                }
+            } catch (error) {
+                log(`Error playing ${name} sound: ${error.message}`, 'error');
+            }
+        }
+        
+        // Toggle audio function
+        function toggleAudio() {
+            audioEnabled = !audioEnabled;
+            toggleBtn.textContent = `Audio: ${audioEnabled ? 'ON' : 'OFF'}`;
+            log(`Audio ${audioEnabled ? 'enabled' : 'disabled'}`, audioEnabled ? 'success' : 'info');
+        }
+        
+        // Event listeners
+        toggleBtn.addEventListener('click', toggleAudio);
+        
+        bounceBtn.addEventListener('click', () => {
+            playSound(bounceSound, 'bounce');
         });
+        
+        wallBtn.addEventListener('click', () => {
+            playSound(wallSound, 'wall');
+        });
+        
+        scoreBtn.addEventListener('click', () => {
+            playSound(scoreSound, 'score');
+        });
+        
+        // Initial setup - try to unlock audio on iOS
+        function unlockAudio() {
+            log('Attempting to unlock audio on iOS/Safari...', 'info');
+            
+            // Create a short silent sound
+            const silentSound = new Audio("data:audio/mp3;base64,SUQzBAAAAAAAI1TSU0UAAAAPAAADTGF2ZjU4LjEzLjEwMAAAAAAAAAAAAAAA//tAwAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAACAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMD/wAARCAABAAEDASIAAhEBAxEB/8QAGQAAAgMBAAAAAAAAAAAAAAAAAAQCAwUB/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAwDAQACEQMRAD8AegAAAAAA/9k=");
+            silentSound.volume = 0.1;
+            silentSound.play().then(() => {
+                log('Audio unlocked successfully', 'success');
+                
+                // Also try to preload our actual sounds
+                const sounds = [bounceSound, wallSound, scoreSound];
+                sounds.forEach(sound => {
+                    sound.load();
+                });
+            }).catch(err => {
+                log('Could not unlock audio automatically. User interaction needed.', 'warning');
+            });
+        }
+        
+        // Try to unlock audio when the page loads
+        document.addEventListener('DOMContentLoaded', unlockAudio);
+        
+        // Also try to unlock on first user interaction
+        const unlockOnUserAction = () => {
+            unlockAudio();
+            document.removeEventListener('click', unlockOnUserAction);
+            document.removeEventListener('touchstart', unlockOnUserAction);
+        };
+        
+        document.addEventListener('click', unlockOnUserAction);
+        document.addEventListener('touchstart', unlockOnUserAction);
+        
+        // Log initial state
+        log('Audio test page ready. Click any button to test sounds.', 'info');
     </script>
 </body>
 </html> 

@@ -1,15 +1,29 @@
 # Vibe Pong Version History
 
-## Current Version: v0.1.6ai
-- Starting AI-assisted improvements from the stable v0.1.6t version
-- Focused on improving code structure, audio system, and adding new features
+## Current Version: v0.1.7ai
 
-### Changes in v0.1.6ai:
-- Added central config.js file to organize all game constants and settings
-- Created modular AudioManager class for improved audio handling
-- Replaced placeholder sounds with higher quality game-appropriate sounds
-- Created attractive test interface for verifying audio functionality
-- Improved cross-platform audio support, especially for iOS devices
+### v0.1.7ai
+- Implemented a reliable cross-platform audio system using Web Audio API oscillators
+- Fixed audio playback issues on iOS/Safari and other mobile devices
+- Simplified audio architecture for improved performance and reliability
+- Added audio unlocking mechanism to ensure audio works after user interaction
+- Created distinct sound profiles for different game events (bounce, wall, score)
+
+### v0.1.6ai
+- Added central config.js file for game settings
+- Created modular AudioManager class for better sound handling
+- Replaced placeholder sounds with improved quality audio
+- Improved cross-platform audio support, especially for iOS
+- Updated versioning scheme to include "ai" suffix for AI-assisted improvements
+
+### v0.1.5
+- Initial implementation of Three.js for 3D graphics
+- Added basic physics for ball and paddle movement
+- Implemented score keeping
+
+### v0.1.0
+- Project initialization
+- Basic HTML/CSS/JS setup
 
 ## Previous Versions
 - v0.1.6t: Stable production version with working visuals and basic gameplay

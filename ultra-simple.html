@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ultra Simple Sound Test</title>
+    <style>
+        body { font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; }
+        button { padding: 10px 20px; margin: 10px; font-size: 16px; }
+    </style>
+</head>
+<body>
+    <h1>Ultra Simple Sound Test</h1>
+    <p>This is a completely standalone HTML file with inline sounds.</p>
+    
+    <button onclick="playSound('bounce')">Play Bounce</button>
+    <button onclick="playSound('wall')">Play Wall</button>
+    <button onclick="playSound('score')">Play Score</button>
+    
+    <script>
+        // The simplest possible sound implementation
+        function playSound(type) {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+            
+            // Different sound characteristics for each type
+            if (type === 'bounce') {
+                oscillator.type = 'square';
+                oscillator.frequency.value = 440; // A4
+                gainNode.gain.value = 0.3;
+                
+                // Short ping duration
+                gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+                
+            } else if (type === 'wall') {
+                oscillator.type = 'sine';
+                oscillator.frequency.value = 330; // E4
+                gainNode.gain.value = 0.4;
+                
+                // Lower frequency sound
+                gainNode.gain.setValueAtTime(0.4, ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+                
+            } else { // score
+                oscillator.type = 'sawtooth';
+                oscillator.frequency.value = 587.33; // D5
+                gainNode.gain.value = 0.2;
+                
+                // Rising celebratory sound
+                oscillator.frequency.setValueAtTime(440, ctx.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.3);
+                gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+            }
+            
+            // Connect and play
+            oscillator.connect(gainNode);
+            gainNode.connect(ctx.destination);
+            
+            oscillator.start();
+            setTimeout(() => {
+                oscillator.stop();
+                alert("Sound played: " + type);
+            }, type === 'score' ? 500 : (type === 'wall' ? 200 : 100));
+        }
+    </script>
+</body>
+</html> 
