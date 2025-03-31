@@ -19,7 +19,7 @@
         body {
             margin: 0;
             overflow: hidden;
-            font-family: 'Arial', sans-serif;
+            font-family: 'Orbitron', sans-serif;
             background-color: #0a0a0f;
             color: white;
             display: flex;
@@ -30,34 +30,47 @@
         }
         
         h1 {
-            font-size: 32px;
+            font-size: 48px;
             margin-bottom: 20px;
-            color: #00c3ff;
-            text-shadow: 0 0 10px rgba(0, 195, 255, 0.5);
+            color: #ffea00;
+            text-shadow: 0 0 20px rgba(255, 234, 0, 0.7), 0 0 40px rgba(255, 200, 0, 0.4);
+            animation: glow 2s infinite alternate;
+        }
+        
+        @keyframes glow {
+            from {
+                text-shadow: 0 0 20px rgba(255, 234, 0, 0.7), 0 0 40px rgba(255, 200, 0, 0.4);
+            }
+            to {
+                text-shadow: 0 0 30px rgba(255, 234, 0, 0.9), 0 0 50px rgba(255, 200, 0, 0.7);
+            }
         }
         
         .description {
             max-width: 600px;
             text-align: center;
             margin-bottom: 40px;
-            line-height: 1.5;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.8);
         }
         
         .button {
-            display: inline-block;
-            padding: 12px 24px;
-            margin: 10px;
-            background-color: #00c3ff;
+            padding: 15px 40px;
+            margin: 15px;
+            background-color: transparent;
             color: white;
-            border: none;
+            border: 2px solid #00c3ff;
             border-radius: 5px;
-            font-size: 16px;
+            font-size: 20px;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.3s;
+            box-shadow: 0 0 15px rgba(0, 195, 255, 0.5);
+            font-family: 'Orbitron', sans-serif;
         }
         
         .button:hover {
-            background-color: #00a0ff;
+            background-color: rgba(0, 195, 255, 0.2);
+            box-shadow: 0 0 20px rgba(0, 195, 255, 0.8), 0 0 40px rgba(0, 150, 255, 0.4);
             transform: scale(1.05);
         }
         
@@ -67,20 +80,45 @@
             left: 10px;
             font-size: 12px;
             color: rgba(255, 255, 255, 0.5);
+            font-family: monospace;
+        }
+        
+        /* Add required Vibe Jam 2025 attribution link */
+        .attribution {
+            font-family: 'system-ui', sans-serif;
+            position: fixed;
+            bottom: -1px;
+            right: -1px;
+            padding: 7px;
+            font-size: 14px;
+            font-weight: bold;
+            background: #fff;
+            color: #000;
+            text-decoration: none;
+            border-top-left-radius: 12px;
+            z-index: 10000;
+            border: 1px solid #fff;
         }
     </style>
+    
+    <!-- Google Fonts for a retro feel -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <h1>Vibe Pong - Audio System Test</h1>
+    <h1>VIBE PONG</h1>
+    <h2 style="margin-top: 0; color: #00c3ff;">Audio System Test</h2>
     
     <div class="description">
-        This page tests the new AudioManager implementation with a simplified UI.
-        Click the button below to load the test interface.
+        This page tests our improved audio system with higher quality sounds.
+        Click the button below to load the test interface and try different game sounds.
     </div>
     
-    <button id="start-test" class="button">Start Audio Test</button>
+    <button id="start-test" class="button">START AUDIO TEST</button>
     
     <div class="version">v0.1.6ai</div>
+    
+    <!-- Attribution link -->
+    <a target="_blank" href="https://jam.pieter.com" class="attribution">🕹️ Vibe Jam 2025</a>
 
     <script>
         document.getElementById('start-test').addEventListener('click', function() {
